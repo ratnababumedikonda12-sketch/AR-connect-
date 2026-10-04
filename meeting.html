@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AR Connect Meeting</title>
+
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+let currentMeeting = new URLSearchParams(location.search).get("meeting") || "main";
+
+let arLanguage = localStorage.getItem("arConnectLanguage") || "en";
+
+function toggleLanguage(){
+  const box=document.getElementById("languageBox");
+  if(box){
+    box.style.display =
+      box.style.display === "none" ? "block" : "none";
+  }
+}
+
+function setARLanguage(code){
+  arLanguage=code;
+  localStorage.setItem("arConnectLanguage",code);
+
+  const select=document.getElementById("languageSelect");
+  const label=document.getElementById("selectedLanguage");
+
+  if(select){
+    const name=select.options[select.selectedIndex].text;
+    if(label) label.textContent="Selected: "+name;
+  }
+
+  console.log("🌐 AR Connect language:",code);
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const select=document.getElementById("languageSelect");
+
+  if(select){
+    select.value=arLanguage;
+
+    const label=document.getElementById("selectedLanguage");
+    if(label){
+      const option=select.options[select.selectedIndex];
+      label.textContent="Selected: "+(option ? option.text : "English");
+    }
+  }
+});
+
+
+
+function updateParticipantCount(count){
+  const el=document.getElementById("participantCount");
+  if(el){
+    const n=parseInt(count);
+    el.textContent=Number.isFinite(n) && n > 0 ? n : 1;
+  }
+}
+
+function toggleParticipants(){
+  const panel=document.getElementById("participantPanel");
+  if(panel){
+    panel.style.display =
+      panel.style.display === "none" ? "block" : "none";
+  }
+}
+
+function addParticipantToList(id,name){
+  const list=document.getElementById("participantList");
+  if(!list || !id) return;
+
+  const itemId="participant-"+id;
+
+  if(document.getElementById(itemId)) return;
+
+  const item=document.createElement("div");
+  item.id=itemId;
+  item.style.cssText=
+    "padding:9px;border-radius:10px;background:#1e293b;margin-top:6px;";
+
+  item.textContent="👤 "+(name || "Participant");
+
+  list.appendChild(item);
+}
+
+function removeParticipantFromList(id){
+  const item=document.getElementById("participant-"+id);
+  if(item) item.remove();
+}
+
+</script>
+<style>
+*{box-sizing:border-box}
+
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  background:#05070d;
+  color:#fff;
+  font-family:Inter,Arial,sans-serif;
+}
+
+body{
+  overflow-x:hidden;
+  padding-bottom:88px;
+}
+
+/* Top AR Connect bar */
+header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  height:58px;
+  padding:10px 16px;
+  background:rgba(8,10,18,.92);
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid #242938;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+header div:first-child{
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.2px;
+}
+
+#meetingId{
+  color:#aeb7ca;
+  font-size:13px;
+  font-weight:600;
+}
+
+/* Connection status */
+#status{
+  position:fixed;
+  top:68px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:30;
+  padding:6px 12px;
+  border-radius:999px;
+  background:#111827dd;
+  border:1px solid #293246;
+  color:#aeb7ca;
+  font-size:12px;
+  backdrop-filter:blur(12px);
+}
+
+/* Main video area */
+#videos{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  padding:14px;
+  max-width:1400px;
+  margin:0 auto;
+}
+
+.tile{
+  position:relative;
+  min-height:260px;
+  aspect-ratio:16/9;
+  background:#0b0f18;
+  border:1px solid #293142;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 12px 35px rgba(0,0,0,.45);
+}
+
+video{
+  width:100%;
+  height:100%;
+  min-height:0;
+  object-fit:cover;
+  display:block;
+  background:#080b12;
+}
+
+.name{
+  position:absolute;
+  left:10px;
+  bottom:10px;
+  z-index:2;
+  padding:6px 10px;
+  border-radius:9px;
+  background:rgba(5,8,16,.78);
+  border:1px solid rgba(255,255,255,.12);
+  color:#fff;
+  font-size:13px;
+  font-weight:600;
+  backdrop-filter:blur(8px);
+}
+
+/* Participants button */
+#participantToggle{
+  background:#111827ee!important;
+  border:1px solid #293246!important;
+}
+
+/* Participants / language / calculator panels */
+#participantPanel,
+#languageBox,
+#calculator{
+  background:rgba(12,16,27,.98)!important;
+  border:1px solid #30394d!important;
+  border-radius:18px!important;
+  box-shadow:0 20px 60px rgba(0,0,0,.65)!important;
+  backdrop-filter:blur(20px);
+}
+
+/* Buttons */
+button{
+  border:1px solid #30394d;
+  border-radius:14px;
+  padding:10px 13px;
+  font-size:15px;
+  background:#151b29;
+  color:#fff;
+  cursor:pointer;
+  transition:transform .15s,background .15s,border-color .15s;
+}
+
+button:hover{
+  background:#20283a;
+  border-color:#46536d;
+}
+
+button:active{
+  transform:scale(.94);
+}
+
+button.danger{
+  background:#dc2626;
+  border-color:#ef4444;
+}
+
+/* Bottom meeting controls */
+#controls{
+  position:fixed!important;
+  left:50%!important;
+  bottom:12px!important;
+  transform:translateX(-50%)!important;
+  z-index:9998!important;
+
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+
+  width:max-content!important;
+  max-width:calc(100vw - 20px)!important;
+
+  padding:9px!important;
+  background:rgba(13,17,28,.94)!important;
+  border:1px solid #30394d!important;
+  border-radius:20px!important;
+  box-shadow:0 15px 50px rgba(0,0,0,.7)!important;
+  backdrop-filter:blur(20px)!important;
+
+  overflow-x:auto!important;
+  white-space:nowrap!important;
+}
+
+#controls button{
+  width:46px;
+  height:46px;
+  min-width:46px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  font-size:19px;
+}
+
+#controls button.danger{
+  width:52px;
+  min-width:52px;
+  border-radius:50%;
+}
+
+/* Calculator */
+#calculator{
+  z-index:9999!important;
+}
+
+/* Mobile */
+@media(max-width:700px){
+
+  body{
+    padding-bottom:82px;
+  }
+
+  header{
+    height:54px;
+    padding:9px 12px;
+  }
+
+  header div:first-child{
+    font-size:16px;
+  }
+
+  #meetingId{
+    font-size:11px;
+  }
+
+  #status{
+    top:62px;
+  }
+
+  #videos{
+    grid-template-columns:1fr;
+    gap:9px;
+    padding:9px;
+    padding-top:38px;
+  }
+
+  .tile{
+    min-height:calc(100vw * .56);
+    aspect-ratio:16/9;
+    border-radius:15px;
+  }
+
+  #controls{
+    bottom:7px!important;
+    width:calc(100vw - 12px)!important;
+    max-width:none!important;
+    justify-content:flex-start!important;
+    border-radius:18px!important;
+    padding:7px!important;
+    gap:6px!important;
+  }
+
+  #controls button{
+    width:44px;
+    min-width:44px;
+    height:44px;
+  }
+
+  #controls button.danger{
+    width:48px;
+    min-width:48px;
+  }
+}
+
+/* Very small phones */
+@media(max-width:380px){
+
+  #controls button{
+    width:40px;
+    min-width:40px;
+    height:40px;
+    font-size:17px;
+  }
+
+  #controls button.danger{
+    width:44px;
+    min-width:44px;
+  }
+}
+</style>
+
+<style id="ar-connect-world-style">
+#friendCallBox{
+  display:none !important;
+}
+
+#passwordGate{
+  background:
+    radial-gradient(circle at 20% 20%,rgba(37,99,235,.22),transparent 35%),
+    radial-gradient(circle at 80% 80%,rgba(124,58,237,.20),transparent 35%),
+    #050816 !important;
+}
+
+#passwordGate > div{
+  border:1px solid #334155 !important;
+  box-shadow:0 25px 100px rgba(0,0,0,.75) !important;
+}
+
+#passwordGate input:focus{
+  border-color:#60a5fa !important;
+  box-shadow:0 0 0 3px #2563eb22 !important;
+}
+
+#passwordGate button{
+  cursor:pointer;
+  transition:.2s;
+}
+
+#passwordGate button:active{
+  transform:scale(.97);
+}
+</style>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+
+<body>
+<!-- 🔐 AR CONNECT PASSWORD GATE -->
+<div id="passwordGate" style="
+position:fixed;
+inset:0;
+z-index:99999;
+display:flex;
+align-items:center;
+justify-content:center;
+background:#050816;
+padding:20px;
+">
+  <div style="
+    width:100%;
+    max-width:380px;
+    padding:28px;
+    border-radius:24px;
+    background:#0f172a;
+    border:1px solid #334155;
+    box-shadow:0 20px 70px #000;
+    text-align:center;
+  ">
+    <div style="font-size:42px;margin-bottom:10px;">🔐</div>
+
+    <h2 style="margin:0 0 8px;">AR Connect</h2>
+
+    <div style="color:#94a3b8;margin-bottom:20px;">
+      Your private meeting is ready
+    </div>
+
+    <input
+      id="meetingPassword"
+      type="password"
+      placeholder="Enter Meeting Password"
+      autocomplete="off"
+      style="
+        width:100%;
+        padding:14px;
+        border-radius:14px;
+        border:1px solid #475569;
+        background:#020617;
+        color:white;
+        outline:none;
+        font-size:16px;
+        margin-bottom:12px;
+      "
+    >
+
+    <button
+      onclick="verifyMeetingPassword()"
+      style="
+        width:100%;
+        padding:14px;
+        border:0;
+        border-radius:14px;
+        background:#2563eb;
+        color:white;
+        font-size:16px;
+        font-weight:bold;
+      "
+    >
+      🚀 ENTER AR CONNECT
+    </button>
+
+    <div id="passwordStatus"
+         style="margin-top:12px;color:#94a3b8;min-height:20px;">
+    </div>
+  </div>
+</div>
+
+<script>
+async function verifyMeetingPassword(){
+
+  const input=document.getElementById("meetingPassword");
+  const status=document.getElementById("passwordStatus");
+
+  const meetingId =
+    new URLSearchParams(location.search).get("meeting") || "main";
+
+  // Creator password saved by index.html
+  const savedPassword =
+    sessionStorage.getItem("arMeetingPassword");
+
+  // If creator just created this meeting, verify automatically
+  const savedMeetingId =
+    sessionStorage.getItem("arMeetingId");
+
+  if(savedMeetingId === meetingId && savedPassword){
+
+    status.textContent="🔓 Entering your private meeting...";
+    status.style.color="#22c55e";
+
+    try{
+
+      const response=await fetch("/api/verify-meeting-password",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          meetingId,
+          password:savedPassword
+        })
+      });
+
+      const result=await response.json();
+
+      if(result.success){
+
+        sessionStorage.setItem(
+          "arMeetingAccess:"+meetingId,
+          "true"
+        );
+
+        const gate=document.getElementById("passwordGate");
+        if(gate) gate.remove();
+
+        console.log(
+          "🔓 Creator access granted:",
+          meetingId
+        );
+
+        return;
+      }
+
+    }catch(error){
+
+      console.error(
+        "🔴 Automatic password verification failed:",
+        error
+      );
+    }
+  }
+
+  // Normal friend/manual password entry
+  const password=input.value;
+
+  if(!password){
+    status.textContent="Enter the meeting password";
+    status.style.color="#fbbf24";
+    return;
+  }
+
+  status.textContent="Checking...";
+  status.style.color="#94a3b8";
+
+  try{
+
+    const response=await fetch("/api/verify-meeting-password",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        meetingId,
+        password
+      })
+    });
+
+    const result=await response.json();
+
+    if(result.success){
+
+      sessionStorage.setItem(
+        "arMeetingAccess:"+meetingId,
+        "true"
+      );
+
+      const gate=document.getElementById("passwordGate");
+      if(gate) gate.remove();
+
+      console.log(
+        "🔓 Meeting access granted:",
+        meetingId
+      );
+
+    }else{
+
+      status.textContent=
+        result.message || "Wrong password";
+
+      status.style.color="#f87171";
+      input.value="";
+      input.focus();
+    }
+
+  }catch(error){
+
+    console.error(
+      "🔴 Password verification error:",
+      error
+    );
+
+    status.textContent=
+      "Error: "+(error.message || "Server connection failed");
+
+    status.style.color="#f87171";
+  }
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+
+  const meetingId =
+    new URLSearchParams(location.search).get("meeting") || "main";
+
+  const access=sessionStorage.getItem(
+    "arMeetingAccess:"+meetingId
+  );
+
+  if(access==="true"){
+
+    const gate=document.getElementById("passwordGate");
+
+    if(gate) gate.remove();
+
+  }else{
+
+    // Creator: automatically verify saved password
+    const savedMeetingId =
+      sessionStorage.getItem("arMeetingId");
+
+    const savedPassword =
+      sessionStorage.getItem("arMeetingPassword");
+
+    if(
+      savedMeetingId === meetingId &&
+      savedPassword
+    ){
+
+      setTimeout(()=>{
+        verifyMeetingPassword();
+      },100);
+    }
+  }
+});
+
+</script>
+
+
+<!-- FRIEND CALL UI HIDDEN - AR CONNECT WORLD USES LINK + PASSWORD -->
+<div id="friendCallBox" style="display:none;margin:12px 0;padding:12px;border-radius:14px;background:#111827;border:1px solid #334155;">
+  <div style="font-weight:bold;margin-bottom:8px;">👥 Friend Call</div>
+
+  <div style="display:flex;gap:8px;">
+    <input
+      id="friendId"
+      type="text"
+      placeholder="Enter Friend ID"
+      autocomplete="off"
+      style="flex:1;padding:10px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:white;"
+    >
+
+    <button
+      type="button"
+      onclick="callFriend(document.getElementById('friendId').value)"
+      style="padding:10px 14px;border:0;border-radius:10px;background:#2563eb;color:white;font-weight:bold;"
+    >📞 Call</button>
+  </div>
+</div>
+
+
+<div id="participantBadge"
+style="
+position:fixed;
+top:15px;
+left:12px;
+z-index:9999;
+background:#111827ee;
+color:white;
+padding:10px 14px;
+border-radius:14px;
+font-weight:700;
+font-size:15px;
+box-shadow:0 5px 20px #0006;
+cursor:pointer;
+"
+onclick="toggleParticipants()">
+👥 Participants: <span id="participantCount">1</span>
+</div>
+
+<div id="participantPanel"
+style="
+display:none;
+position:fixed;
+top:65px;
+left:12px;
+z-index:10000;
+width:min(300px,calc(100vw - 24px));
+background:#111827;
+color:white;
+padding:14px;
+border-radius:16px;
+box-shadow:0 10px 35px #0009;
+box-sizing:border-box;
+">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <strong>👥 Participants</strong>
+    <button onclick="toggleParticipants()" style="padding:5px 9px;font-size:14px;">✕</button>
+  </div>
+
+  <div id="participantList">
+    <div style="padding:8px;color:#cbd5e1;">You</div>
+  </div>
+</div>
+
+<div id="languageBox" style="
+position:fixed;
+top:70px;
+right:12px;
+z-index:10000;
+background:#111827;
+color:white;
+padding:14px;
+border-radius:16px;
+width:min(300px,calc(100vw - 24px));
+box-shadow:0 10px 35px #0009;
+display:none;
+box-sizing:border-box;
+">
+  <div style="font-size:18px;font-weight:700;margin-bottom:10px;">
+    🌐 AR Connect Languages
+  </div>
+
+  <label style="display:block;margin-bottom:6px;">🎙️ Speech Language</label>
+
+  <select id="languageSelect"
+    onchange="setARLanguage(this.value)"
+    style="
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:0;
+      font-size:16px;
+      background:#f8fafc;
+      color:#111827;
+    ">
+      <option value="en">English</option>
+      <option value="te">Telugu</option>
+      <option value="hi">Hindi</option>
+      <option value="ta">Tamil</option>
+      <option value="kn">Kannada</option>
+      <option value="ml">Malayalam</option>
+      <option value="bn">Bengali</option>
+      <option value="mr">Marathi</option>
+      <option value="gu">Gujarati</option>
+      <option value="pa">Punjabi</option>
+      <option value="or">Odia</option>
+      <option value="as">Assamese</option>
+      <option value="ur">Urdu</option>
+      <option value="ne">Nepali</option>
+      <option value="sa">Sanskrit</option>
+      <option value="sd">Sindhi</option>
+      <option value="kok">Konkani</option>
+      <option value="mai">Maithili</option>
+      <option value="mni">Manipuri</option>
+      <option value="ks">Kashmiri</option>
+      <option value="ar">Arabic</option>
+      <option value="fa">Persian</option>
+      <option value="he">Hebrew</option>
+      <option value="tr">Turkish</option>
+      <option value="ru">Russian</option>
+      <option value="uk">Ukrainian</option>
+      <option value="pl">Polish</option>
+      <option value="cs">Czech</option>
+      <option value="sk">Slovak</option>
+      <option value="de">German</option>
+      <option value="fr">French</option>
+      <option value="es">Spanish</option>
+      <option value="it">Italian</option>
+      <option value="pt">Portuguese</option>
+      <option value="nl">Dutch</option>
+      <option value="sv">Swedish</option>
+      <option value="no">Norwegian</option>
+      <option value="da">Danish</option>
+      <option value="fi">Finnish</option>
+      <option value="is">Icelandic</option>
+      <option value="el">Greek</option>
+      <option value="ro">Romanian</option>
+      <option value="hu">Hungarian</option>
+      <option value="bg">Bulgarian</option>
+      <option value="sr">Serbian</option>
+      <option value="hr">Croatian</option>
+      <option value="sl">Slovenian</option>
+      <option value="bs">Bosnian</option>
+      <option value="mk">Macedonian</option>
+      <option value="sq">Albanian</option>
+      <option value="et">Estonian</option>
+      <option value="lv">Latvian</option>
+      <option value="lt">Lithuanian</option>
+      <option value="ga">Irish</option>
+      <option value="cy">Welsh</option>
+      <option value="mt">Maltese</option>
+      <option value="zh">Chinese</option>
+      <option value="ja">Japanese</option>
+      <option value="ko">Korean</option>
+      <option value="th">Thai</option>
+      <option value="vi">Vietnamese</option>
+      <option value="id">Indonesian</option>
+      <option value="ms">Malay</option>
+      <option value="fil">Filipino</option>
+      <option value="my">Burmese</option>
+      <option value="km">Khmer</option>
+      <option value="lo">Lao</option>
+      <option value="mn">Mongolian</option>
+      <option value="ne">Nepali</option>
+      <option value="jv">Javanese</option>
+      <option value="su">Sundanese</option>
+      <option value="sw">Swahili</option>
+      <option value="zu">Zulu</option>
+      <option value="xh">Xhosa</option>
+      <option value="af">Afrikaans</option>
+      <option value="am">Amharic</option>
+      <option value="yo">Yoruba</option>
+      <option value="ig">Igbo</option>
+      <option value="ha">Hausa</option>
+      <option value="so">Somali</option>
+      <option value="rw">Kinyarwanda</option>
+      <option value="mg">Malagasy</option>
+      <option value="la">Latin</option>
+      <option value="eo">Esperanto</option>
+      <option value="tl">Tagalog</option>
+  </select>
+
+  <div id="selectedLanguage"
+       style="margin-top:10px;font-size:14px;color:#cbd5e1;">
+    Selected: English
+  </div>
+
+  <button onclick="toggleLanguage()"
+    style="margin-top:10px;width:100%;">
+    ✕ Close
+  </button>
+</div>
+
+<button id="languageBtn"
+  onclick="toggleLanguage()"
+  style="
+    position:fixed;
+    top:15px;
+    right:12px;
+    z-index:9999;
+  ">
+  🌐 Language
+</button>
+
+
+<header>
+  <div>🚀 AR Connect</div>
+  <div id="meetingId"></div>
+</header>
+
+<div id="status">Connecting...</div>
+<!-- remote voice control is now inside the final controls bar -->
+  <div id="videos"></div>
+
+<div id="calculator" style="display:none;position:fixed;bottom:90px;right:12px;background:#111827;padding:14px;border-radius:18px;z-index:9999;width:min(280px,calc(100vw - 24px));box-sizing:border-box;box-shadow:0 10px 35px #0009;border:1px solid #475569">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:white;font-weight:700">
+    <span>🧮 Calculator</span>
+    <button onclick="toggleCalculator()" style="padding:5px 9px;font-size:14px">✕</button>
+  </div>
+  <input id="calcDisplay" readonly inputmode="none" style="width:100%;height:52px;box-sizing:border-box;font-size:24px;padding:10px 12px;margin-bottom:10px;border-radius:10px;border:0;text-align:right;background:#f8fafc;color:#111827">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+    <button onclick="calcPress('7')">7</button>
+    <button onclick="calcPress('8')">8</button>
+    <button onclick="calcPress('9')">9</button>
+    <button onclick="calcPress('/')">÷</button>
+    <button onclick="calcPress('4')">4</button>
+    <button onclick="calcPress('5')">5</button>
+    <button onclick="calcPress('6')">6</button>
+    <button onclick="calcPress('*')">×</button>
+    <button onclick="calcPress('1')">1</button>
+    <button onclick="calcPress('2')">2</button>
+    <button onclick="calcPress('3')">3</button>
+    <button onclick="calcPress('-')">−</button>
+    <button onclick="calcPress('0')">0</button>
+    <button onclick="calcPress('.')">.</button>
+    <button onclick="calcResult()">=</button>
+    <button onclick="calcPress('+')">+</button>
+    <button onclick="calcClear()" style="grid-column:span 4">Clear</button>
+  </div>
+</div>
+
+<div id="controls" style="
+position:fixed;
+left:50%;
+bottom:12px;
+transform:translateX(-50%);
+z-index:9998;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:7px;
+width:calc(100% - 16px);
+max-width:900px;
+padding:9px;
+box-sizing:border-box;
+background:#0f172edd;
+backdrop-filter:blur(12px);
+border:1px solid #475569;
+border-radius:20px;
+box-shadow:0 10px 35px #0009;
+overflow-x:auto;
+white-space:nowrap;
+">
+  <button id="micBtn" title="Microphone">🎤</button>
+  <button id="camBtn" title="Camera">📹</button>
+  <button id="remoteAudioBtn" onclick="toggleRemoteAudio()" title="Remote Voice">🔊</button>
+  <button id="handBtn" onclick="toggleHand()" title="Raise Hand">✋</button>
+  <button onclick="toggleCalculator()" title="Calculator">🧮</button>
+  <button onclick="toggleParticipants()" title="Participants">👥</button>
+  <button onclick="toggleLanguage()" title="Languages">🌐</button>
+  <button id="copyBtn" title="Copy Invite Link">🔗</button>
+  <button class="danger" onclick="leaveMeeting()" title="Leave Meeting">📞</button>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const meetingId = params.get("meeting") || "main";
+
+document.getElementById("meetingId").textContent = meetingId;
+
+
+// ================= FRIEND LINK AUTO-JOIN =================
+function getFriendIdFromLink(){
+  try{
+    return new URLSearchParams(location.search).get("friend");
+  }catch(e){
+    return null;
+  }
+}
+
+function autoJoinFromLink(){
+  const friend=getFriendIdFromLink();
+  if(!friend) return;
+
+  console.log("🔗 FRIEND LINK:",friend);
+
+  localStorage.setItem("arFriendId",friend);
+
+  const friendBox=document.getElementById("friendId");
+  if(friendBox) friendBox.value=friend;
+
+  setStatus("🔗 Friend link detected");
+
+  if(typeof socket !== "undefined" && socket.connected){
+    socket.emit("friend-request",{
+      friendId:friend
+    });
+  }
+}
+
+const socket = io();
+
+let localStream = null;
+let peerConnections = new Map();
+let remoteTiles = new Map();
+
+const rtcConfig = {
+  iceServers: [
+    {urls:"stun:stun.l.google.com:19302"},
+    {urls:"stun:stun1.l.google.com:19302"}
+  ]
+};
+
+function setStatus(text){
+  document.getElementById("status").textContent = text;
+}
+
+
+  function toggleRemoteAudio(){
+  remoteAudioMuted = !remoteAudioMuted;
+
+  document.querySelectorAll("video").forEach(v=>{
+    if(v.id !== "localVideo"){
+      v.muted = remoteAudioMuted;
+      v.volume = remoteAudioMuted ? 0 : 1;
+
+      if(!remoteAudioMuted){
+        const p = v.play();
+        if(p){
+          p.then(()=>{
+            console.log("🔊 REMOTE AUDIO UNLOCKED:",v.id);
+          }).catch(err=>{
+            console.log("⚠️ Audio play waiting:",err);
+          });
+        }
+      }
+    }
+  });
+
+  const btn=document.getElementById("remoteAudioBtn");
+  if(btn){
+    btn.textContent =
+      remoteAudioMuted ? "🔇 Voice OFF" : "🔊 Voice ON";
+  }
+
+  console.log(
+    remoteAudioMuted
+      ? "🔇 Remote voice OFF"
+      : "🔊 Remote voice ON"
+  );
+}
+
+let calcExpression = "";
+
+function toggleCalculator(){
+  const box=document.getElementById("calculator");
+  if(box) box.style.display = box.style.display === "none" ? "block" : "none";
+}
+
+function calcPress(value){
+  calcExpression += value;
+  const display=document.getElementById("calcDisplay");
+  if(display) display.value=calcExpression;
+
+  if(typeof socket !== "undefined" && currentMeeting){
+    socket.emit("calculator-update", {
+      meetingId: currentMeeting,
+      expression: calcExpression
+    });
+  }
+}
+
+function calcClear(){
+  calcExpression="";
+  const display=document.getElementById("calcDisplay");
+  if(display) display.value="";
+}
+
+function calcResult(){
+  try{
+    if(!/^[0-9+*/.() -]+$/.test(calcExpression)) throw new Error("Invalid");
+    const result=Function('"use strict";return ('+calcExpression+')')();
+    calcExpression=String(result);
+    document.getElementById("calcDisplay").value=calcExpression;
+
+    if(typeof socket !== "undefined" && currentMeeting){
+      socket.emit("calculator-update", {
+        meetingId: currentMeeting,
+        expression: calcExpression,
+        result: result
+      });
+    }
+  }catch(e){
+    calcExpression="";
+    document.getElementById("calcDisplay").value="Error";
+  }
+}
+
+function addVideo(id, stream, name){
+  if(document.getElementById("tile-"+id)) return;
+
+  const tile = document.createElement("div");
+  tile.className = "tile";
+  tile.id = "tile-"+id;
+
+  const video = document.createElement("video");
+  video.autoplay = true;
+  video.playsInline = true;
+    video.muted = (id === "local") ? true : remoteAudioMuted;
+    video.volume = (id === "local") ? 0 : (remoteAudioMuted ? 0 : 1);
+  video.srcObject = stream;
+
+  video.onloadedmetadata = ()=>{
+    video.play().then(()=>{
+      console.log("▶️ REMOTE VIDEO PLAYING:", id);
+    }).catch(err=>{
+      console.error("❌ REMOTE VIDEO PLAY FAILED:", id, err);
+    });
+  };
+
+  const label = document.createElement("div");
+  label.className = "name";
+  label.textContent = name || "Participant";
+
+  tile.appendChild(video);
+  tile.appendChild(label);
+
+  document.getElementById("videos").appendChild(tile);
+  remoteTiles.set(id,tile);
+}
+
+function removeVideo(id){
+  const tile = document.getElementById("tile-"+id);
+  if(tile) tile.remove();
+
+  const pc = peerConnections.get(id);
+  if(pc){
+    pc.close();
+    peerConnections.delete(id);
+  }
+
+  remoteTiles.delete(id);
+}
+
+/*
+==================================================
+OLD SOCKET.IO WEBRTC ENGINE DISABLED
+PeerJS is now the main video/audio engine.
+==================================================
+// OLD Socket.IO WebRTC engine removed.
+// PeerJS is the only video/audio engine.
+
+socket.on("connect", ()=>{
+  console.log("✅ Socket.IO connected:", socket.id);
+
+  const mid = new URLSearchParams(location.search).get("meeting") || "main";
+
+  socket.emit("join-room", {
+    meetingId: mid,
+    userId: socket.id
+  });
+
+  console.log("📡 Socket joined meeting:", mid);
+});
+
+socket.on("disconnect", ()=>{
+  console.log("❌ Socket.IO disconnected");
+});
+
+socket.on("friend-request",(data)=>{
+  console.log("👤 FRIEND REQUEST:",data);
+
+  if(!data || !data.friendId) return;
+
+  const myFriendId=localStorage.getItem("arFriendId");
+
+  if(data.friendId===myFriendId){
+    setStatus("👥 Friend detected");
+  }
+});
+
+// PeerJS is the ONLY video/audio engine.
+// Old Socket.IO WebRTC handlers are disabled.
+
+socket.on("calculator-update",(data)=>{
+
+  if(!data) return;
+
+  const display=document.getElementById("calcDisplay");
+  if(display){
+    display.value = data.expression || "";
+  }
+
+  calcExpression = data.expression || "";
+
+  if(typeof setStatus === "function"){
+    setStatus("🧮 Participant shared calculator");
+  }
+});
+
+socket.on("hand-raise",(data)=>{
+  const name = data.userId === socket.id ? "You" : "Participant";
+
+  if(data.raised){
+    setStatus("✋ " + name + " raised hand");
+  }else{
+    setStatus("👇 " + name + " lowered hand");
+  }
+
+  const tile = document.getElementById("tile-"+data.userId);
+
+  if(tile){
+    let badge = tile.querySelector(".hand-badge");
+
+    if(data.raised){
+      if(!badge){
+        badge = document.createElement("div");
+        badge.className = "hand-badge";
+        badge.textContent = "✋";
+        badge.style.position = "absolute";
+        badge.style.top = "8px";
+        badge.style.right = "8px";
+        badge.style.fontSize = "28px";
+        tile.style.position = "relative";
+        tile.appendChild(badge);
+      }
+    }else if(badge){
+      badge.remove();
+    }
+  }
+});
+
+socket.on("user-left",userId=>{
+  removeVideo(userId);
+  setStatus("Participant left");
+});
+
+socket.on("room-users",count=>{
+  updateParticipantCount(count);
+  setStatus("👥 Participants: "+count);
+});
+
+*/
+</script>
+
+<script>
+document.getElementById("micBtn").addEventListener("click",()=>{
+  const stream = (typeof arStream !== "undefined" && arStream)
+    ? arStream
+    : localStream;
+
+  if(!stream){
+    console.log("🎤 Mic stream not ready");
+    return;
+  }
+
+  const track = stream.getAudioTracks()[0];
+
+  if(!track){
+    console.log("🎤 Audio track not found");
+    return;
+  }
+
+  track.enabled = !track.enabled;
+
+  const micBtn = document.getElementById("micBtn");
+
+  if(track.enabled){
+    micBtn.textContent = "🎤";
+    micBtn.style.background = "";
+    micBtn.style.color = "";
+    micBtn.style.boxShadow = "";
+    console.log("🎤 Microphone ON");
+  }else{
+    micBtn.textContent = "🔴";
+    micBtn.style.background = "#ef4444";
+    micBtn.style.color = "#ffffff";
+    micBtn.style.boxShadow = "0 0 18px #ef4444";
+    console.log("🔴 Microphone OFF");
+  }
+});
+
+document.getElementById("camBtn").onclick=()=>{
+  if(!localStream) return;
+
+  const track=localStream.getVideoTracks()[0];
+  if(!track) return;
+
+  track.enabled=!track.enabled;
+  document.getElementById("camBtn").textContent=
+    track.enabled ? "📹" : "🚫";
+};
+
+document.getElementById("copyBtn").onclick=async()=>{
+  const meetingLink =
+    window.location.origin +
+    "/meeting.html?meeting=" +
+    encodeURIComponent(meetingId);
+
+  try{
+    await navigator.clipboard.writeText(meetingLink);
+    setStatus("✅ Meeting link copied");
+  }catch(e){
+    prompt("Copy meeting link:",meetingLink);
+  }
+};
+
+function leaveMeeting(){
+  if(localStream){
+    localStream.getTracks().forEach(t=>t.stop());
+  }
+
+  peerConnections.forEach(pc=>pc.close());
+
+  socket.disconnect();
+
+  location.href="/";
+}
+
+// ===== FRIEND CALL CLIENT =====
+socket.on("friend-ready",(data)=>{
+  if(!data || !data.friendId) return;
+  console.log("✅ Friend registered:",data.friendId);
+  setStatus("👤 Friend ID ready: "+data.friendId);
+});
+
+socket.on("friend-error",(data)=>{
+  console.warn("❌ Friend error:",data);
+  setStatus("❌ "+(data && data.message ? data.message : "Friend error"));
+});
+
+socket.on("incoming-friend-call",(data)=>{
+  console.log("📞 Incoming friend call:",data);
+
+  if(!data || !data.friendId) return;
+
+  const accept = confirm(
+    "📞 Incoming friend call\n\nFriend ID: "+data.friendId+"\n\nAccept?"
+  );
+
+  if(accept){
+    setStatus("📞 Friend call accepted");
+    socket.emit("friend-call-accepted",{
+      friendId:data.friendId,
+      callerSocketId:data.from
+    });
+  }else{
+    setStatus("❌ Friend call declined");
+  }
+});
+
+// Friend-call WebRTC is handled by PeerJS meeting engine.
+socket.on("friend-call-accepted",(data)=>{
+  if(!data || !data.from) return;
+
+  console.log("✅ Friend accepted:",data.from);
+  setStatus("📞 Friend accepted — PeerJS connecting...");
+});
+
+function callFriend(friendId){
+  friendId=String(friendId || "").trim();
+
+  if(!friendId){
+    alert("Enter Friend ID");
+    return;
+  }
+
+  if(!socket || !socket.connected){
+    alert("Not connected to AR Connect");
+    return;
+  }
+
+  console.log("📞 Calling friend:",friendId);
+
+  socket.emit("call-friend",{
+    friendId:friendId
+  });
+
+  setStatus("📞 Calling friend...");
+}
+
+
+
+
+
+
+</script>
+
+<!-- AR CONNECT PEERJS ENGINE -->
+<script>
+let arPeer = null;
+let arStream = null;
+let arCalls = {};
+
+async function startARPeerEngine(){
+
+  try{
+    console.log("🚀 AR PeerJS engine starting...");
+
+    arStream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        width:{ideal:1280,max:1920},
+        height:{ideal:720,max:1080},
+        frameRate:{ideal:30,max:30},
+        facingMode:"user"
+      },
+      audio:{
+        echoCancellation:true,
+        noiseSuppression:true,
+        autoGainControl:true,
+        channelCount:1
+      }
+    });
+
+    console.log("🎥 AR V4 camera + microphone ready");
+
+    // Use PeerJS media stream as the main local stream
+    localStream = arStream;
+
+    if(typeof addVideo === "function"){
+      addVideo("local", arStream, "You");
+    }
+
+    arPeer = new Peer();
+
+    arPeer.on("open", id=>{
+      console.log("🆔 AR Peer ready:",id);
+      window.arPeerId = id;
+
+      // First join the Socket.IO meeting room
+      socket.emit("join-room",{
+        meetingId: meetingId,
+        userId: socket.id
+      });
+
+      // Then register the PeerJS ID
+      socket.emit("register-peer", {
+        meetingId: meetingId,
+        peerId: id
+      });
+
+      console.log("📡 Joined meeting + registered Peer:", meetingId, id);
+    });
+
+    // Existing participants: call them after PeerJS is ready
+    async function callARPeer(peerId){
+      if(!peerId || peerId === window.arPeerId) return;
+      if(arCalls[peerId]) return;
+
+      // Wait briefly for PeerJS + local media to become ready
+      for(let i=0;i<30;i++){
+        if(arPeer && arStream) break;
+        await new Promise(r=>setTimeout(r,200));
+      }
+
+      if(!arPeer){
+        console.error("❌ PeerJS not ready:", peerId);
+        return;
+      }
+
+      if(!arStream){
+        console.error("❌ Local media not ready:", peerId);
+        return;
+      }
+
+      console.log("📞 AR CALLING PEER:", peerId);
+
+      const call = arPeer.call(peerId, arStream);
+
+      if(!call){
+        console.error("❌ PeerJS call could not start:", peerId);
+        return;
+      }
+
+      arCalls[peerId] = call;
+
+      call.on("stream", remoteStream=>{
+        console.log("🎥 REMOTE STREAM:", peerId);
+        showARRemote(peerId, remoteStream);
+      });
+
+      call.on("close", ()=>{
+        console.log("📴 AR call closed:", peerId);
+        delete arCalls[peerId];
+      });
+
+      call.on("error", err=>{
+        console.error("❌ AR call error:", peerId, err);
+        delete arCalls[peerId];
+      });
+    }
+
+    socket.on("new-peer", data=>{
+      const peerId = data?.peerId;
+      console.log("🆕 New AR peer:", peerId);
+
+      if(peerId){
+        setTimeout(()=>{
+          callARPeer(peerId);
+        }, 300);
+      }
+    });
+
+    socket.on("existing-peers", peerIds=>{
+      console.log("👥 Existing AR peers:", peerIds);
+
+      (peerIds || []).forEach(peerId=>{
+        callARPeer(peerId);
+      });
+    });
+
+    arPeer.on("error", error=>{
+      console.error("❌ PeerJS error:",error);
+    });
+
+    arPeer.on("call", call=>{
+      console.log("📞 Incoming AR call:",call.peer);
+
+      call.answer(arStream);
+
+      call.on("stream", remoteStream=>{
+        console.log("🎥 REMOTE STREAM:",call.peer);
+        showARRemote(call.peer,remoteStream);
+      });
+
+      arCalls[call.peer]=call;
+    });
+
+  }catch(error){
+    console.error("❌ AR Peer engine:",error);
+  }
+}
+
+function showARRemote(peerId,stream){
+
+  const videosBox = document.getElementById("videos");
+  if(!videosBox){
+    console.error("❌ Main #videos container not found");
+    return;
+  }
+
+  let tile = document.getElementById("ar-tile-"+peerId);
+  let video;
+
+  if(!tile){
+    tile=document.createElement("div");
+    tile.id="ar-tile-"+peerId;
+    tile.className="video-tile";
+
+    video=document.createElement("video");
+    video.id="ar-remote-"+peerId;
+    video.autoplay=true;
+    video.playsInline=true;
+    video.controls=false;
+    video.muted=false;
+    video.volume=1;
+
+    const label=document.createElement("div");
+    label.className="name";
+    label.textContent="Participant";
+
+    tile.appendChild(video);
+    tile.appendChild(label);
+
+    videosBox.appendChild(tile);
+  }else{
+    video=tile.querySelector("video");
+  }
+
+  if(!video) return;
+
+  video.srcObject=stream;
+  video.muted=remoteAudioMuted;
+  video.volume=remoteAudioMuted ? 0 : 1;
+
+  video.onloadedmetadata=()=>{
+    video.play().then(()=>{
+      console.log("▶️ REMOTE VIDEO PLAYING:",peerId);
+    }).catch(error=>{
+      console.log("🔊 Remote autoplay waiting:",error);
+    });
+  };
+
+  console.log("✅ Remote video placed in main grid:",peerId);
+}
+window.startARPeerEngine=startARPeerEngine;
+
+window.addEventListener("load",()=>{
+  setTimeout(()=>{
+    startARPeerEngine();
+  },1000);
+});
+</script>
+
+</body>
+</html>

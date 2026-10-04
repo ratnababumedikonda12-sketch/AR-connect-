@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AR Connect</title>
+<style>
+body{
+  margin:0;
+  background:#000;
+  color:#0ff;
+  font-family:sans-serif;
+  text-align:center;
+  padding:30px 15px;
+}
+.logo{
+  font-size:32px;
+  font-weight:bold;
+  margin-top:30px;
+}
+.sub{
+  color:#aaa;
+  margin:12px 0 30px;
+}
+button{
+  display:block;
+  width:90%;
+  max-width:420px;
+  margin:14px auto;
+  padding:16px;
+  border:0;
+  border-radius:14px;
+  font-size:18px;
+  font-weight:bold;
+  background:#0ff;
+  color:#000;
+}
+input{
+  width:85%;
+  max-width:380px;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid #0ff;
+  background:#111;
+  color:#fff;
+  font-size:16px;
+  box-sizing:border-box;
+}
+#status{
+  margin-top:20px;
+  color:#fff;
+  min-height:24px;
+  word-break:break-all;
+}
+</style>
+</head>
+
+<body>
+
+<div class="logo">🚀 AR CONNECT</div>
+<div class="sub">Connect • Communicate • Together</div>
+
+<button onclick="startMeeting()">🚀 START NEW MEETING</button>
+
+<input id="meetingId" placeholder="Meeting ID enter chey">
+
+<button onclick="joinMeeting()">👥 JOIN MEETING</button>
+
+<button onclick="copyCurrentInvite()">🔗 COPY INVITE LINK</button>
+
+<div id="status"></div>
+
+<script>
+
+function makeMeetingId(){
+  return "AR-" +
+    Math.random().toString(36).substring(2,8).toUpperCase() +
+    "-" +
+    Date.now().toString(36).slice(-4).toUpperCase();
+}
+
+function meetingLink(id){
+  return location.origin +
+    "/meeting.html?meeting=" +
+    encodeURIComponent(id);
+}
+
+async function startMeeting(){
+
+  const status = document.getElementById("status");
+
+  try{
+    status.innerText = "⏳ Creating private meeting...";
+
+    const response = await fetch("/api/create-meeting", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({})
+    });
+
+    const result = await response.json();
+
+    if(!response.ok || !result.success){
+      throw new Error(result.message || "Meeting creation failed");
+    }
+
+    const id = result.meetingId;
+    const password = result.password;
+
+    // Store credentials for the creator
+    sessionStorage.setItem("arMeetingId", id);
+    sessionStorage.setItem("arMeetingPassword", password);
+
+    document.getElementById("meetingId").value = id;
+
+    status.innerHTML =
+      "✅ Private meeting created<br>" +
+      "Meeting ID: <b>" + id + "</b><br>" +
+      "Password: <b>" + password + "</b><br>" +
+      "Opening meeting...";
+
+    setTimeout(() => {
+      location.href = meetingLink(id);
+    }, 800);
+
+  }catch(error){
+
+    console.error("Create meeting error:", error);
+
+    status.innerText =
+      "❌ Could not create meeting: " + error.message;
+  }
+}
+
+function joinMeeting(){
+  const id = document.getElementById("meetingId").value.trim();
+
+  if(!id){
+    document.getElementById("status").innerText =
+      "⚠️ Meeting ID enter chey";
+    return;
+  }
+
+  location.href = meetingLink(id);
+}
+
+async function copyCurrentInvite(){
+
+  const id = document.getElementById("meetingId").value.trim();
+
+  if(!id){
+    document.getElementById("status").innerText =
+      "⚠️ Mundu Meeting ID enter chey";
+    return;
+  }
+
+  const link = meetingLink(id);
+
+  try{
+    await navigator.clipboard.writeText(link);
+
+    document.getElementById("status").innerHTML =
+      "✅ Invite link copied!<br>" + link;
+
+  }catch(e){
+
+    prompt("Copy this invite link:", link);
+  }
+}
+
+const params = new URLSearchParams(location.search);
+const meeting = params.get("meeting");
+
+if(meeting){
+  document.getElementById("meetingId").value = meeting;
+}
+
+</script>
+
+</body>
+</html>
