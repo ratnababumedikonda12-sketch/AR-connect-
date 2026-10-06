@@ -179,37 +179,51 @@ io.on('connection', (socket) => {
 });
 
 socket.on('register-peer', (data) => {
-  const meetingId = data?.meetingId;
-  const peerId = data?.peerId;
+  const meetingId = String(data?.meetingId || '').trim();
+  const peerId = String(data?.peerId || '').trim();
 
-  if (!meetingId || !peerId) return;
+  if (!meetingId || !peerId) {
+    console.log('⚠️ Invalid peer registration');
+    return;
+  }
 
   socket.data.meetingId = meetingId;
   socket.data.peerId = peerId;
 
-  if (!rooms[meetingId]) rooms[meetingId] = [];
+  if (!rooms[meetingId]) {
+    rooms[meetingId] = [];
+  }
 
   // Make sure this socket is in the room
   if (!rooms[meetingId].includes(socket.id)) {
     rooms[meetingId].push(socket.id);
   }
 
+  // Get ONLY peers that are already registered and ready
   const peerIds = rooms[meetingId]
     .filter(id => id !== socket.id)
-    .map(id => io.sockets.sockets.get(id)?.data?.peerId)
+    .map(id => io.sockets.sockets.get(id))
+    .filter(Boolean)
+    .map(s => s.data?.peerId)
     .filter(Boolean);
-
-  // Tell the newly registered participant about existing peers
-  socket.emit('existing-peers', peerIds);
-
-  // Tell existing participants about the new peer
-  socket.to(meetingId).emit('new-peer', {
-    peerId,
-    socketId: socket.id
-  });
 
   console.log(
     `📡 Peer registered ${peerId} in ${meetingId} | Existing peers: ${peerIds.length}`
+  );
+
+  // Send existing peers to the new participant
+  socket.emit('existing-peers', peerIds);
+
+  // Notify all existing participants about this new peer
+  socket.to(meetingId).emit('new-peer', {
+    peerId: peerId,
+    socketId: socket.id
+  });
+
+  // Keep participant count synchronized
+  io.to(meetingId).emit(
+    'room-users',
+    rooms[meetingId].length
   );
 });
 
