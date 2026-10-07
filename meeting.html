@@ -1843,7 +1843,7 @@ function arStartRecognition(){
   arVoiceRecognition.lang =
     document.getElementById("arVoiceSource").value;
 
-  arVoiceRecognition.continuous = false;
+  arVoiceRecognition.continuous = true;
   arVoiceRecognition.interimResults = false;
 
   arVoiceRecognition.onstart = function(){
