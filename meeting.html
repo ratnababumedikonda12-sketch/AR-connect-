@@ -915,6 +915,7 @@ white-space:nowrap;
   <button id="handBtn" onclick="toggleHand()" title="Raise Hand">✋</button>
   <button onclick="toggleCalculator()" title="Calculator">🧮</button>
   <button onclick="toggleParticipants()" title="Participants">👥</button>
+  <button onclick="toggleARChat()" title="Messages">💬</button>
   <button onclick="toggleLanguage()" title="Languages">🌐</button>
   <button id="copyBtn" title="Copy Invite Link">🔗</button>
   <button class="danger" onclick="leaveMeeting()" title="Leave Meeting">📞</button>
@@ -1454,13 +1455,10 @@ async function startARPeerEngine(){
 
     socket.on("new-peer", data=>{
       const peerId = data?.peerId;
-      console.log("🆕 New AR peer:", peerId);
+      console.log("🆕 New AR peer joined:", peerId);
 
-      if(peerId){
-        setTimeout(()=>{
-          callARPeer(peerId);
-        }, 300);
-      }
+      // New participant will call existing peers.
+      // Existing participants only wait for the incoming call.
     });
 
     socket.on("existing-peers", peerIds=>{
@@ -1566,6 +1564,133 @@ window.addEventListener("load",()=>{
     }
   },1000);
 });
+</script>
+
+
+<!-- AR CONNECT CHAT -->
+<style>
+#arChatBox{
+  position:fixed;
+  right:12px;
+  bottom:85px;
+  width:min(340px,calc(100vw - 24px));
+  height:420px;
+  background:#07101c;
+  border:1px solid #24445f;
+  border-radius:18px;
+  z-index:9999;
+  display:none;
+  box-shadow:0 10px 40px #000;
+  overflow:hidden;
+}
+#arChatHeader{
+  padding:12px;
+  font-weight:bold;
+  border-bottom:1px solid #24445f;
+  display:flex;
+  justify-content:space-between;
+}
+#arChatMessages{
+  height:320px;
+  overflow-y:auto;
+  padding:10px;
+}
+.arMsg{
+  margin:7px 0;
+  padding:8px 10px;
+  border-radius:12px;
+  background:#122337;
+  word-break:break-word;
+}
+#arChatInputRow{
+  display:flex;
+  gap:6px;
+  padding:8px;
+  border-top:1px solid #24445f;
+}
+#arChatInput{
+  flex:1;
+  min-width:0;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #35536d;
+  background:#02070d;
+  color:white;
+}
+#arChatSend{
+  border:0;
+  border-radius:10px;
+  padding:0 14px;
+  cursor:pointer;
+}
+</style>
+
+<div id="arChatBox">
+  <div id="arChatHeader">
+    <span>💬 Messages</span>
+    <button onclick="toggleARChat()">✕</button>
+  </div>
+
+  <div id="arChatMessages"></div>
+
+  <div id="arChatInputRow">
+    <input id="arChatInput"
+           type="text"
+           placeholder="Type a message..."
+           onkeydown="if(event.key==='Enter') sendARChat()">
+    <button id="arChatSend" onclick="sendARChat()">Send</button>
+  </div>
+</div>
+
+<script>
+function toggleARChat(){
+  const box=document.getElementById("arChatBox");
+  if(!box)return;
+  box.style.display=box.style.display==="none" ? "block" : "none";
+}
+
+function sendARChat(){
+  const input=document.getElementById("arChatInput");
+  if(!input)return;
+
+  const message=input.value.trim();
+  if(!message)return;
+
+  const data={
+    meetingId:currentMeeting,
+    message:message,
+    sender:"You",
+    time:Date.now()
+  };
+
+  if(typeof socket !== "undefined"){
+    socket.emit("chat",data);
+  }
+
+  input.value="";
+}
+
+function showARChatMessage(data){
+  const box=document.getElementById("arChatMessages");
+  if(!box)return;
+
+  const msg=document.createElement("div");
+  msg.className="arMsg";
+
+  const sender=data.sender || "Participant";
+  const text=data.message || "";
+
+  msg.textContent=sender + ": " + text;
+
+  box.appendChild(msg);
+  box.scrollTop=box.scrollHeight;
+}
+
+if(typeof socket !== "undefined"){
+  socket.on("chat",(data)=>{
+    showARChatMessage(data);
+  });
+}
 </script>
 
 </body>
