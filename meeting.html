@@ -1854,6 +1854,14 @@ function arStartRecognition(){
   };
 
   arVoiceRecognition.onerror = function(e){
+    console.log("🎙️ SpeechRecognition error:", e.error);
+
+    if(e.error === "aborted" || e.error === "no-speech"){
+      document.getElementById("arVoiceTranslateStatus").textContent =
+        "🎤 మళ్లీ మాట్లాడండి...";
+      return;
+    }
+
     document.getElementById("arVoiceTranslateStatus").textContent =
       "❌ Voice error: " + e.error;
   };
