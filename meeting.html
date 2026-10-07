@@ -1887,6 +1887,16 @@ function arStartRecognition(){
         arTargetSpeechLang(target)
       );
 
+      // Send translated voice text to other meeting participants
+      if(typeof socket !== "undefined"){
+        socket.emit("voice-translation", {
+          meetingId: currentMeeting,
+          translatedText: translated,
+          targetLanguage: target,
+          sender: "You"
+        });
+      }
+
     }catch(err){
 
       console.error(err);
@@ -1936,6 +1946,74 @@ document.getElementById("arVoiceStop").onclick =
       "⏹ Stopped";
   };
 
+})();
+</script>
+
+
+<!-- AR REMOTE VOICE TRANSLATION -->
+<script>
+(function(){
+  function arHandleRemoteVoiceTranslation(data){
+    if(!data || !data.translatedText) return;
+
+    const text = String(data.translatedText);
+    const lang = String(data.targetLanguage || "en");
+    const sender = String(data.sender || "Participant");
+
+    console.log("🌐 Remote translated voice:", text);
+
+    // Show in voice translation panel
+    const translatedBox =
+      document.getElementById("arVoiceTranslated");
+
+    if(translatedBox){
+      translatedBox.textContent = sender + ": " + text;
+    }
+
+    // Speak translated text on this device
+    if("speechSynthesis" in window){
+      window.speechSynthesis.cancel();
+
+      const u = new SpeechSynthesisUtterance(text);
+
+      const langMap = {
+        te:"te-IN",
+        en:"en-US",
+        hi:"hi-IN",
+        ta:"ta-IN",
+        kn:"kn-IN",
+        ml:"ml-IN",
+        fr:"fr-FR",
+        de:"de-DE",
+        es:"es-ES",
+        ja:"ja-JP",
+        zh:"zh-CN",
+        ar:"ar-SA"
+      };
+
+      u.lang = langMap[lang] || lang || "en-US";
+      u.rate = 1;
+      u.pitch = 1;
+
+      window.speechSynthesis.speak(u);
+    }
+  }
+
+  function arSetupRemoteVoiceTranslation(){
+    if(typeof socket === "undefined"){
+      setTimeout(arSetupRemoteVoiceTranslation, 500);
+      return;
+    }
+
+    if(window.__arRemoteVoiceTranslationReady) return;
+    window.__arRemoteVoiceTranslationReady = true;
+
+    socket.on("voice-translation", arHandleRemoteVoiceTranslation);
+
+    console.log("✅ Remote Voice Translation ready");
+  }
+
+  arSetupRemoteVoiceTranslation();
 })();
 </script>
 

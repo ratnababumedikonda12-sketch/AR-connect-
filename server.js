@@ -257,6 +257,23 @@ socket.on('signal', (data) => {
     }
   });
 
+  // AR Voice Translation broadcast
+  socket.on('voice-translation', (data) => {
+    const meetingId =
+      data?.meetingId ||
+      data?.roomId ||
+      [...socket.rooms].find(r => r !== socket.id);
+
+    if (meetingId && data?.translatedText) {
+      io.to(meetingId).emit('voice-translation', {
+        translatedText: String(data.translatedText),
+        targetLanguage: String(data.targetLanguage || 'en'),
+        sender: String(data.sender || 'Participant'),
+        time: Date.now()
+      });
+    }
+  });
+
   socket.on('disconnect', () => {
     if (socket.friendId) {
       friendSockets.delete(socket.friendId);
