@@ -2,3 +2,14 @@ node_modules/
 .env
 *.log
 .DS_Store
+
+# AR Connect backup/debug files
+*.backup.*
+*.before-*
+*.broken.*
+*_dump.txt
+camera-test.html
+arconnect-inline.js
+meeting.json
+server.backup.js
+index.broken-modern.html
