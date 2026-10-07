@@ -1347,6 +1347,7 @@ async function startARPeerEngine(){
 
   try{
     console.log("🚀 AR PeerJS engine starting...");
+    setStatus("🎥 Camera + Mic start అవుతోంది...");
 
     arStream = await navigator.mediaDevices.getUserMedia({
       video:{
@@ -1364,6 +1365,7 @@ async function startARPeerEngine(){
     });
 
     console.log("🎥 AR V4 camera + microphone ready");
+    setStatus("🎥 Camera + Mic ready — PeerJS connecting...");
 
     // Use PeerJS media stream as the main local stream
     localStream = arStream;
@@ -1376,6 +1378,7 @@ async function startARPeerEngine(){
 
     arPeer.on("open", id=>{
       console.log("🆔 AR Peer ready:",id);
+      setStatus("✅ AR Connect connected");
       window.arPeerId = id;
 
       // First join the Socket.IO meeting room
