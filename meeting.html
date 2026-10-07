@@ -401,7 +401,7 @@ button.danger{
 
 <body>
 <!-- 🔐 AR CONNECT PASSWORD GATE -->
-<div id="passwordGate" style="
+<div id="passwordGate" style="display:none!important;
 position:fixed;
 inset:0;
 z-index:99999;
@@ -635,7 +635,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     ){
 
       setTimeout(()=>{
-        verifyMeetingPassword();
+        // Password gate disabled
       },100);
     }
   }
