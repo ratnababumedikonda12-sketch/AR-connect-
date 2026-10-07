@@ -1547,23 +1547,14 @@ window.startARPeerEngine=startARPeerEngine;
 
 window.addEventListener("load",()=>{
   setTimeout(()=>{
-    const params = new URLSearchParams(location.search);
-    const meetingId = params.get("meeting") || "main";
-
-    const access =
-      sessionStorage.getItem("arMeetingAccess:" + meetingId);
-
-    if(access === "true"){
-      if(!window.__arPeerStarted){
-        window.__arPeerStarted = true;
-        console.log("🔓 Authorized — starting AR PeerJS");
-        startARPeerEngine();
-      }
-    }else{
-      console.log("🔒 Password required — PeerJS waiting");
+    if(!window.__arPeerStarted){
+      window.__arPeerStarted = true;
+      console.log("🚀 Starting AR PeerJS — password disabled");
+      startARPeerEngine();
     }
   },1000);
 });
+
 </script>
 
 
