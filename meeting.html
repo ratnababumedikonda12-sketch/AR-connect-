@@ -1761,8 +1761,9 @@ let arVoiceRunning = false;
 window.toggleARVoiceTranslation = function(){
   const box=document.getElementById("arVoiceTranslateBox");
   if(!box)return;
-  box.style.display =
-    box.style.display==="none" ? "block" : "none";
+
+  const hidden = getComputedStyle(box).display === "none";
+  box.style.display = hidden ? "block" : "none";
 };
 
 async function arTranslateText(text, target){
