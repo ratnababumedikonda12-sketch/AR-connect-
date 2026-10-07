@@ -1380,13 +1380,13 @@ async function startARPeerEngine(){
 
       // First join the Socket.IO meeting room
       socket.emit("join-room",{
-        meetingId: meetingId,
+        meetingId: currentMeeting,
         userId: socket.id
       });
 
       // Then register the PeerJS ID
       socket.emit("register-peer", {
-        meetingId: meetingId,
+        meetingId: currentMeeting,
         peerId: id
       });
 
