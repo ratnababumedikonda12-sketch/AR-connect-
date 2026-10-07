@@ -915,7 +915,7 @@ white-space:nowrap;
   <button id="handBtn" onclick="toggleHand()" title="Raise Hand">✋</button>
   <button onclick="toggleCalculator()" title="Calculator">🧮</button>
   <button onclick="toggleParticipants()" title="Participants">👥</button>
-  <button onclick="toggleARChat()" title="Messages">💬</button>
+  <button onclick="toggleARChat()" title="Messages">💬</button><button onclick="toggleARVoiceTranslation()" title="Voice Translation">🎙️</button>
   <button onclick="toggleLanguage()" title="Languages">🌐</button>
   <button id="copyBtn" title="Copy Invite Link">🔗</button>
   <button class="danger" onclick="leaveMeeting()" title="Leave Meeting">📞</button>
@@ -1682,6 +1682,261 @@ if(typeof socket !== "undefined"){
     showARChatMessage(data);
   });
 }
+</script>
+
+
+<!-- AR VOICE TRANSLATION -->
+<style>
+#arVoiceTranslateBox{
+  position:fixed;
+  left:12px;
+  bottom:85px;
+  width:min(340px,calc(100vw - 24px));
+  background:#07101c;
+  border:1px solid #24445f;
+  border-radius:18px;
+  padding:14px;
+  z-index:10000;
+  display:none;
+  box-shadow:0 10px 40px #000;
+}
+#arVoiceTranslateBox select,
+#arVoiceTranslateBox button{
+  width:100%;
+  padding:11px;
+  margin-top:8px;
+  border-radius:10px;
+  border:1px solid #35536d;
+  background:#02070d;
+  color:white;
+}
+#arVoiceTranslateStatus{
+  margin-top:10px;
+  font-size:13px;
+  color:#8ee7ff;
+}
+</style>
+
+<div id="arVoiceTranslateBox">
+  <b>🎙️ Voice Translation</b>
+
+  <select id="arVoiceSource">
+    <option value="te-IN">తెలుగు</option>
+    <option value="en-US">English</option>
+    <option value="hi-IN">हिन्दी</option>
+    <option value="ta-IN">தமிழ்</option>
+    <option value="kn-IN">ಕನ್ನಡ</option>
+    <option value="ml-IN">മലയാളം</option>
+  </select>
+
+  <select id="arVoiceTarget">
+    <option value="en">English</option>
+    <option value="te">Telugu</option>
+    <option value="hi">Hindi</option>
+    <option value="ta">Tamil</option>
+    <option value="kn">Kannada</option>
+    <option value="ml">Malayalam</option>
+    <option value="fr">French</option>
+    <option value="de">German</option>
+    <option value="es">Spanish</option>
+    <option value="ja">Japanese</option>
+    <option value="zh">Chinese</option>
+    <option value="ar">Arabic</option>
+  </select>
+
+  <button id="arVoiceStart">🎤 Start Voice Translation</button>
+  <button id="arVoiceStop">⏹ Stop</button>
+
+  <div id="arVoiceTranslateStatus">Ready</div>
+  <div id="arVoiceOriginal" style="margin-top:8px"></div>
+  <div id="arVoiceTranslated" style="margin-top:8px"></div>
+</div>
+
+<script>
+(function(){
+
+let arVoiceRecognition = null;
+let arVoiceRunning = false;
+
+window.toggleARVoiceTranslation = function(){
+  const box=document.getElementById("arVoiceTranslateBox");
+  if(!box)return;
+  box.style.display =
+    box.style.display==="none" ? "block" : "none";
+};
+
+async function arTranslateText(text, target){
+
+  const url =
+    "https://api.mymemory.translated.net/get?q=" +
+    encodeURIComponent(text) +
+    "&langpair=auto|" +
+    encodeURIComponent(target);
+
+  const response = await fetch(url);
+
+  if(!response.ok){
+    throw new Error("Translation request failed");
+  }
+
+  const data = await response.json();
+
+  if(data &&
+     data.responseData &&
+     data.responseData.translatedText){
+
+    return data.responseData.translatedText;
+  }
+
+  throw new Error("Translation unavailable");
+}
+
+function arSpeak(text, lang){
+
+  if(!("speechSynthesis" in window)){
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang;
+
+  window.speechSynthesis.speak(u);
+}
+
+function arTargetSpeechLang(lang){
+
+  const map = {
+    te:"te-IN",
+    en:"en-US",
+    hi:"hi-IN",
+    ta:"ta-IN",
+    kn:"kn-IN",
+    ml:"ml-IN",
+    fr:"fr-FR",
+    de:"de-DE",
+    es:"es-ES",
+    ja:"ja-JP",
+    zh:"zh-CN",
+    ar:"ar-SA"
+  };
+
+  return map[lang] || "en-US";
+}
+
+function arStartRecognition(){
+
+  const SR =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if(!SR){
+    document.getElementById("arVoiceTranslateStatus").textContent =
+      "❌ Speech Recognition not supported";
+    return;
+  }
+
+  arVoiceRecognition = new SR();
+
+  arVoiceRecognition.lang =
+    document.getElementById("arVoiceSource").value;
+
+  arVoiceRecognition.continuous = false;
+  arVoiceRecognition.interimResults = false;
+
+  arVoiceRecognition.onstart = function(){
+    arVoiceRunning=true;
+
+    document.getElementById("arVoiceTranslateStatus").textContent =
+      "🎤 Listening...";
+  };
+
+  arVoiceRecognition.onerror = function(e){
+    document.getElementById("arVoiceTranslateStatus").textContent =
+      "❌ Voice error: " + e.error;
+  };
+
+  arVoiceRecognition.onresult = async function(event){
+
+    const text =
+      event.results[0][0].transcript.trim();
+
+    document.getElementById("arVoiceOriginal").textContent =
+      "🗣️ " + text;
+
+    document.getElementById("arVoiceTranslateStatus").textContent =
+      "🌐 Translating...";
+
+    try{
+
+      const target =
+        document.getElementById("arVoiceTarget").value;
+
+      const translated =
+        await arTranslateText(text,target);
+
+      document.getElementById("arVoiceTranslated").textContent =
+        "🔊 " + translated;
+
+      document.getElementById("arVoiceTranslateStatus").textContent =
+        "✅ Translation complete";
+
+      arSpeak(
+        translated,
+        arTargetSpeechLang(target)
+      );
+
+    }catch(err){
+
+      console.error(err);
+
+      document.getElementById("arVoiceTranslateStatus").textContent =
+        "❌ Translation failed";
+    }
+  };
+
+  arVoiceRecognition.onend = function(){
+
+    arVoiceRunning=false;
+
+    if(document.getElementById("arVoiceTranslateStatus").textContent ===
+       "🎤 Listening..."){
+
+      document.getElementById("arVoiceTranslateStatus").textContent =
+        "Ready";
+    }
+  };
+
+  arVoiceRecognition.start();
+}
+
+document.getElementById("arVoiceStart").onclick =
+  function(){
+
+    if(arVoiceRunning)return;
+
+    arStartRecognition();
+  };
+
+document.getElementById("arVoiceStop").onclick =
+  function(){
+
+    arVoiceRunning=false;
+
+    if(arVoiceRecognition){
+      try{
+        arVoiceRecognition.stop();
+      }catch(e){}
+    }
+
+    window.speechSynthesis.cancel();
+
+    document.getElementById("arVoiceTranslateStatus").textContent =
+      "⏹ Stopped";
+  };
+
+})();
 </script>
 
 </body>
