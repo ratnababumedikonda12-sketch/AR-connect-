@@ -1827,7 +1827,6 @@ function arTargetSpeechLang(lang){
 }
 
 function arStartRecognition(){
-
   const SR =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
@@ -1843,36 +1842,44 @@ function arStartRecognition(){
   arVoiceRecognition.lang =
     document.getElementById("arVoiceSource").value;
 
-  arVoiceRecognition.continuous = true;
-  arVoiceRecognition.interimResults = false;
+  arVoiceRecognition.continuous = false;
+  arVoiceRecognition.interimResults = true;
+  arVoiceRecognition.maxAlternatives = 1;
 
   arVoiceRecognition.onstart = function(){
-    arVoiceRunning=true;
+    arVoiceRunning = true;
 
     document.getElementById("arVoiceTranslateStatus").textContent =
-      "🎤 Listening...";
-  };
+      "🎤 వింటున్నాను...";
 
-  arVoiceRecognition.onerror = function(e){
-    console.log("🎙️ SpeechRecognition error:", e.error);
-
-    if(e.error === "aborted" || e.error === "no-speech"){
-      document.getElementById("arVoiceTranslateStatus").textContent =
-        "🎤 మళ్లీ మాట్లాడండి...";
-      return;
-    }
-
-    document.getElementById("arVoiceTranslateStatus").textContent =
-      "❌ Voice error: " + e.error;
+    console.log("🎙️ Speech recognition started");
   };
 
   arVoiceRecognition.onresult = async function(event){
 
-    const text =
-      event.results[0][0].transcript.trim();
+    let text = "";
+
+    for(let i = event.resultIndex; i < event.results.length; i++){
+      text += event.results[i][0].transcript;
+    }
+
+    text = text.trim();
+
+    console.log("🎙️ Speech result:", text);
+
+    if(!text) return;
 
     document.getElementById("arVoiceOriginal").textContent =
       "🗣️ " + text;
+
+    const lastResult =
+      event.results[event.results.length - 1];
+
+    if(!lastResult.isFinal){
+      document.getElementById("arVoiceTranslateStatus").textContent =
+        "🎤 వింటున్నాను...";
+      return;
+    }
 
     document.getElementById("arVoiceTranslateStatus").textContent =
       "🌐 Translating...";
@@ -1882,8 +1889,12 @@ function arStartRecognition(){
       const target =
         document.getElementById("arVoiceTarget").value;
 
+      console.log("🌐 Translating:", text, "→", target);
+
       const translated =
-        await arTranslateText(text,target);
+        await arTranslateText(text, target);
+
+      console.log("✅ Translation:", translated);
 
       document.getElementById("arVoiceTranslated").textContent =
         "🔊 " + translated;
@@ -1896,7 +1907,6 @@ function arStartRecognition(){
         arTargetSpeechLang(target)
       );
 
-      // Send translated voice text to other meeting participants
       if(typeof socket !== "undefined"){
         socket.emit("voice-translation", {
           meetingId: currentMeeting,
@@ -1908,26 +1918,57 @@ function arStartRecognition(){
 
     }catch(err){
 
-      console.error(err);
+      console.error("❌ Translation error:", err);
 
       document.getElementById("arVoiceTranslateStatus").textContent =
         "❌ Translation failed";
     }
   };
 
+  arVoiceRecognition.onerror = function(e){
+
+    console.log("🎙️ SpeechRecognition error:", e.error);
+
+    if(e.error === "aborted"){
+      document.getElementById("arVoiceTranslateStatus").textContent =
+        "🎤 మళ్లీ మాట్లాడండి...";
+      return;
+    }
+
+    if(e.error === "no-speech"){
+      document.getElementById("arVoiceTranslateStatus").textContent =
+        "🎤 ఏమీ వినిపించలేదు — మళ్లీ మాట్లాడండి";
+      return;
+    }
+
+    if(e.error === "not-allowed"){
+      document.getElementById("arVoiceTranslateStatus").textContent =
+        "❌ Microphone permission అవసరం";
+      return;
+    }
+
+    document.getElementById("arVoiceTranslateStatus").textContent =
+      "❌ Voice error: " + e.error;
+  };
+
   arVoiceRecognition.onend = function(){
 
-    arVoiceRunning=false;
+    console.log("🎙️ Speech recognition ended");
 
-    if(document.getElementById("arVoiceTranslateStatus").textContent ===
-       "🎤 Listening..."){
+    if(arVoiceRunning){
+      arVoiceRunning = false;
 
       document.getElementById("arVoiceTranslateStatus").textContent =
-        "Ready";
+        "🎤 మళ్లీ మాట్లాడండి";
     }
   };
 
-  arVoiceRecognition.start();
+  try{
+    arVoiceRecognition.start();
+  }catch(err){
+    console.error("🎙️ Start error:", err);
+    arVoiceRunning = false;
+  }
 }
 
 document.getElementById("arVoiceStart").onclick =
