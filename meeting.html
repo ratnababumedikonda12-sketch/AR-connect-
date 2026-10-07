@@ -968,6 +968,7 @@ function setStatus(text){
 }
 
 
+let remoteAudioMuted = false;
   function toggleRemoteAudio(){
   remoteAudioMuted = !remoteAudioMuted;
 
@@ -1192,6 +1193,7 @@ socket.on("room-users",count=>{
   setStatus("👥 Participants: "+count);
 });
 
+*/
 </script>
 
 <script>
