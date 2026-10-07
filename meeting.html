@@ -1545,17 +1545,6 @@ function showARRemote(peerId,stream){
 }
 window.startARPeerEngine=startARPeerEngine;
 
-window.addEventListener("load",()=>{
-  setTimeout(()=>{
-    if(!window.__arPeerStarted){
-      window.__arPeerStarted = true;
-      console.log("🚀 Starting AR PeerJS — password disabled");
-      startARPeerEngine();
-    }
-  },1000);
-});
-
-</script>
 
 
 <!-- AR CONNECT CHAT -->
