@@ -1455,10 +1455,14 @@ async function startARPeerEngine(){
 
     socket.on("new-peer", data=>{
       const peerId = data?.peerId;
+
+      if(!peerId || peerId === window.arPeerId) return;
+
       console.log("🆕 New AR peer joined:", peerId);
 
-      // New participant will call existing peers.
-      // Existing participants only wait for the incoming call.
+      setTimeout(()=>{
+        callARPeer(peerId);
+      }, 500);
     });
 
     socket.on("existing-peers", peerIds=>{
