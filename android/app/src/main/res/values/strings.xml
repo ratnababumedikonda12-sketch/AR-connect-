@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AR Connect</string>
+    <string name="title_activity_main">AR Connect</string>
+    <string name="package_name">com.ratnababu.arconnect</string>
+    <string name="custom_url_scheme">com.ratnababu.arconnect</string>
+</resources>
