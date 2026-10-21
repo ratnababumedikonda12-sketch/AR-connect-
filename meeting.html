@@ -641,6 +641,23 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
 });
 
+
+// AUTO-START AR PEERJS
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    if (window.__arPeerStarted) return;
+
+    if (typeof window.startARPeerEngine !== "function") {
+      console.error("❌ AR PeerJS startup function not found");
+      return;
+    }
+
+    window.__arPeerStarted = true;
+    console.log("🚀 Auto-starting AR PeerJS...");
+    window.startARPeerEngine();
+  }, 500);
+});
+
 </script>
 
 
@@ -1402,7 +1419,7 @@ async function startARPeerEngine(){
         peerId: id
       });
 
-      console.log("📡 Joined meeting + registered Peer:", meetingId, id);
+      console.log("📡 Joined meeting + registered Peer:", currentMeeting, id);
     });
 
     // Existing participants: call them after PeerJS is ready
@@ -1492,6 +1509,11 @@ async function startARPeerEngine(){
 
   }catch(error){
     console.error("❌ AR Peer engine:",error);
+    const message = "Camera/Mic error: " +
+      (error.name || "Error") + " - " +
+      (error.message || String(error));
+    if(typeof setStatus === "function") setStatus("❌ " + message);
+    alert(message);
   }
 }
 
@@ -1548,6 +1570,7 @@ function showARRemote(peerId,stream){
   console.log("✅ Remote video placed in main grid:",peerId);
 }
 window.startARPeerEngine=startARPeerEngine;
+</script>
 
 
 
