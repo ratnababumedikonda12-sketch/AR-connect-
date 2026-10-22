@@ -1,175 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AR Connect</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AR CONNECT</title>
 <style>
-body{
-  margin:0;
-  background:#000;
-  color:#0ff;
-  font-family:sans-serif;
-  text-align:center;
-  padding:30px 15px;
-}
-.logo{
-  font-size:32px;
-  font-weight:bold;
-  margin-top:30px;
-}
-.sub{
-  color:#aaa;
-  margin:12px 0 30px;
-}
-button{
-  display:block;
-  width:90%;
-  max-width:420px;
-  margin:14px auto;
-  padding:16px;
-  border:0;
-  border-radius:14px;
-  font-size:18px;
-  font-weight:bold;
-  background:#0ff;
-  color:#000;
-}
-input{
-  width:85%;
-  max-width:380px;
-  padding:14px;
-  border-radius:12px;
-  border:1px solid #0ff;
-  background:#111;
-  color:#fff;
-  font-size:16px;
-  box-sizing:border-box;
-}
-#status{
-  margin-top:20px;
-  color:#fff;
-  min-height:24px;
-  word-break:break-all;
-}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial;color:#fff}
+.card{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:40px 30px;border-radius:20px;text-align:center;max-width:400px;width:90%;border:1px solid rgba(255,255,255,0.2)}
+h1{font-size:28px;margin-bottom:5px}
+.sub{opacity:0.7;margin-bottom:30px;font-size:14px}
+.btn{width:100%;padding:15px;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer;margin:8px 0;transition:0.3s}
+.btn-primary{background:linear-gradient(90deg,#00f2fe,#4facfe);color:#000}
+.btn-secondary{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3)}
+.btn:hover{transform:scale(1.03)}
+input{width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.3);color:#fff;text-align:center;font-size:16px;margin:8px 0;outline:none}
+input::placeholder{color:rgba(255,255,255,0.5)}
+#status{margin-top:15px;font-size:13px;min-height:20px;color:#00ff88}
 </style>
 </head>
-
 <body>
-
-<div class="logo">🚀 AR CONNECT</div>
+<div class="card">
+<h1>🚀 AR CONNECT</h1>
 <div class="sub">Connect • Communicate • Together</div>
 
-<button onclick="startMeeting()">🚀 START NEW MEETING</button>
+<button class="btn btn-primary" onclick="startMeeting()">🚀 START NEW MEETING</button>
 
-<input id="meetingId" placeholder="Meeting ID enter chey">
+<input id="meetingInput" placeholder="Meeting ID enter chey - ex: AR-XXXXX">
 
-<button onclick="joinMeeting()">👥 JOIN MEETING</button>
+<button class="btn btn-secondary" onclick="joinMeeting()">👥 JOIN MEETING</button>
 
-<button onclick="copyCurrentInvite()">🔗 COPY INVITE LINK</button>
+<button class="btn btn-secondary" onclick="copyLink()">🔗 COPY INVITE LINK</button>
 
 <div id="status"></div>
+</div>
 
 <script>
+let lastMeetingId = localStorage.getItem('lastMeetingId') || '';
+if(lastMeetingId) document.getElementById('meetingInput').value = lastMeetingId;
 
-function makeMeetingId(){
-  return "AR-" +
-    Math.random().toString(36).substring(2,8).toUpperCase() +
-    "-" +
-    Date.now().toString(36).slice(-4).toUpperCase();
+function setStatus(t){ document.getElementById('status').innerText = t; console.log(t); }
+
+function makeId(){
+  const letters = Math.random().toString(36).substring(2,6).toUpperCase();
+  const nums = Math.floor(Math.random()*900+100);
+  return `AR-${letters}${nums}`.substring(0,10);
 }
 
-function meetingLink(id){
-  return location.origin +
-    "/meeting.html?meeting=" +
-    encodeURIComponent(id);
-}
-
-async function startMeeting(){
-
-  const status = document.getElementById("status");
-
-  try{
-    status.innerText = "⏳ Creating private meeting...";
-
-        // FIXED FOR GITHUB PAGES - Local meeting creation (no API)
-    const id = 'AR-' + Math.random().toString(36).substring(2,7).toUpperCase() + Math.floor(Math.random()*90+10);
-    const password = Math.random().toString(36).substring(2,10).toUpperCase();
-    const result = { success: true, meetingId: id, password: password };
-    const response = { ok: true };
-
-    const id = result.meetingId;
-    const password = result.password;
-
-    // Store credentials for the creator
-    sessionStorage.setItem("arMeetingId", id);
-    sessionStorage.setItem("arMeetingPassword", password);
-
-    document.getElementById("meetingId").value = id;
-
-    status.innerHTML =
-      "✅ Private meeting created<br>" +
-      "Meeting ID: <b>" + id + "</b><br>" +
-      "Password: <b>" + password + "</b><br>" +
-      "Opening meeting...";
-
-    setTimeout(() => {
-      location.href = meetingLink(id);
-    }, 800);
-
-  }catch(error){
-
-    console.error("Create meeting error:", error);
-
-    status.innerText =
-      "❌ Could not create meeting: " + error.message;
-  }
+function startMeeting(){
+  setStatus('Creating meeting...');
+  const id = makeId();
+  const pwd = Math.random().toString(36).substring(2,8).toUpperCase();
+  localStorage.setItem('lastMeetingId', id);
+  lastMeetingId = id;
+  document.getElementById('meetingInput').value = id;
+  setStatus(`✅ Created: ${id} - Opening...`);
+  console.log('START:', id);
+  setTimeout(()=>{
+    window.location.href = `meeting.html?meeting=${encodeURIComponent(id)}&pwd=${pwd}`;
+  }, 800);
 }
 
 function joinMeeting(){
-  const id = document.getElementById("meetingId").value.trim();
-
-  if(!id){
-    document.getElementById("status").innerText =
-      "⚠️ Meeting ID enter chey";
-    return;
-  }
-
-  location.href = meetingLink(id);
+  let mid = document.getElementById('meetingInput').value.trim();
+  if(!mid){ setStatus('❌ Meeting ID enter chey bro!'); return; }
+  localStorage.setItem('lastMeetingId', mid);
+  setStatus(`Joining ${mid}...`);
+  setTimeout(()=>{
+    window.location.href = `meeting.html?meeting=${encodeURIComponent(mid)}`;
+  }, 400);
 }
 
-async function copyCurrentInvite(){
-
-  const id = document.getElementById("meetingId").value.trim();
-
-  if(!id){
-    document.getElementById("status").innerText =
-      "⚠️ Mundu Meeting ID enter chey";
-    return;
-  }
-
-  const link = meetingLink(id);
-
-  try{
-    await navigator.clipboard.writeText(link);
-
-    document.getElementById("status").innerHTML =
-      "✅ Invite link copied!<br>" + link;
-
-  }catch(e){
-
-    prompt("Copy this invite link:", link);
-  }
+function copyLink(){
+  let mid = document.getElementById('meetingInput').value.trim() || lastMeetingId;
+  if(!mid){ setStatus('❌ First START or ID enter chey'); return; }
+  const link = `${location.origin}${location.pathname.replace('index.html','')}meeting.html?meeting=${encodeURIComponent(mid)}`;
+  navigator.clipboard.writeText(link).then(()=>{
+    setStatus(`🔗 Copied: ${mid}`);
+  }).catch(()=>{
+    setStatus(link);
+  });
 }
-
-const params = new URLSearchParams(location.search);
-const meeting = params.get("meeting");
-
-if(meeting){
-  document.getElementById("meetingId").value = meeting;
-}
-
 </script>
-
 </body>
 </html>
