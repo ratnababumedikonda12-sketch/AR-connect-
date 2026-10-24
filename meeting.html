@@ -1,17 +1,79 @@
 <!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AR Connect - Live</title>
-<style>body{margin:0;background:#000;height:100vh;overflow:hidden;font-family:Arial}#top{position:fixed;top:0;left:0;right:0;background:#0a84ff;color:#fff;padding:8px 12px;display:flex;justify-content:space-between;z-index:10;font-size:14px}#jitsi{width:100vw;height:100vh;border:none;margin-top:38px;background:#000}</style></head><body>
-<div id="top"><div>🚀 AR Connect - <span id="room"></span> | ✅ Camera ON</div><div><button onclick="navigator.clipboard.writeText(location.href);alert('Link Copied! Share with friend')" style="background:#fff;border:none;color:#0a84ff;padding:4px 12px;border-radius:6px;font-weight:bold">Copy Link</button></div></div>
-<div id="jitsi"></div>
-<script src="https://meet.ffmuc.net/external_api.js"></script>
+<style>
+body{margin:0;background:#000;color:#fff;font-family:Arial;overflow:hidden}
+#top{position:fixed;top:0;left:0;right:0;background:#0a84ff;padding:8px 12px;display:flex;justify-content:space-between;z-index:10;font-size:13px}
+#videos{width:100vw;height:100vh;display:flex;flex-wrap:wrap;padding:50px 4px 10px;gap:4px;box-sizing:border-box}
+.box{flex:1 1 48%;min-width:280px;background:#111;border-radius:12px;position:relative;overflow:hidden;min-height:45vh}
+video{width:100%;height:100%;object-fit:cover;background:#111}
+#local{transform:scaleX(-1)}
+.label{position:absolute;bottom:4px;left:6px;background:rgba(0,0,0,0.7);padding:2px 6px;border-radius:4px;font-size:12px}
+#controls{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(30,30,30,0.9);padding:8px 14px;border-radius:30px;display:flex;gap:10px;z-index:20}
+#controls button{width:42px;height:42px;border-radius:50%;border:none;font-size:18px;background:#333;color:#fff}
+#controls .on{background:#0a84ff}#controls .end{background:#ff3b30}
+#status{position:fixed;top:40px;left:50%;transform:translateX(-50%);background:#222;padding:5px 10px;border-radius:15px;font-size:12px;z-index:10}
+</style></head><body>
+<div id="top"><div>🚀 AR Connect - <span id="roomId"></span> | <span id="pcount">1</span> participant</div><div><button onclick="navigator.clipboard.writeText(location.href);alert('Link copied!')" style="background:#fff;border:none;color:#0a84ff;padding:3px 10px;border-radius:6px;font-weight:bold">Copy Link</button></div></div>
+<div id="status">Camera starting...</div>
+<div id="videos">
+<div class="box"><video id="local" autoplay muted playsinline></video><div class="label">You</div></div>
+<div id="remoteBox" style="flex:1 1 48%;display:flex;flex-wrap:wrap;gap:4px"></div>
+</div>
+<div id="controls"><button id="mic" class="on">🎤</button><button id="cam" class="on">📹</button><button onclick="location.href='/'" class="end">📞</button></div>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-const roomId=new URLSearchParams(location.search).get('room')||new URLSearchParams(location.search).get('meeting')||'RATNA99';
-document.getElementById('room').textContent=roomId;
-const api=new JitsiMeetExternalAPI("meet.ffmuc.net",{
- roomName:"ARConnect_"+roomId,
- width:"100%",height:window.innerHeight-38,
- parentNode:document.querySelector('#jitsi'),
- configOverwrite:{prejoinPageEnabled:false,startWithAudioMuted:false,startWithVideoMuted:false},
- interfaceConfigOverwrite:{SHOW_JITSI_WATERMARK:false,TOOLBAR_BUTTONS:['microphone','camera','desktop','chat','hangup','tileview']},
- userInfo:{displayName:"Ratna"}
-});
+let socket,peer,localStream,peers={},roomId=new URLSearchParams(location.search).get('room')||'RATNA99';
+document.getElementById('roomId').textContent=roomId;
+const statusEl=document.getElementById('status');
+function setStatus(s){statusEl.textContent=s;console.log(s);}
+socket=io("https://ar-connect.onrender.com",{transports:["websocket","polling"]});
+socket.on("connect",()=>setStatus("Socket OK - Starting camera..."));
+async function start(){
+ try{
+  localStream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:"user"},audio:true});
+ }catch(e){
+  try{localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});}
+  catch(e2){setStatus("Camera blocked - Click 🔒 > Allow > Reload : "+e2.message);alert("Camera blocked! Click 🔒 icon near address bar > Allow Camera & Mic > Reload");return;}
+ }
+ document.getElementById('local').srcObject=localStream;
+ setStatus("✅ Camera ON - Open same link in 2nd device to connect");
+ peer=new Peer();
+ peer.on('open',id=>{
+  setStatus("Peer ready "+id.slice(0,6)+"... Joining room "+roomId);
+  socket.emit("join-room",{meetingId:roomId,userId:socket.id});
+  socket.emit("register-peer",{meetingId:roomId,peerId:id});
+  window.myId=id;
+ });
+ peer.on('call',call=>{
+  call.answer(localStream);
+  call.on('stream',s=>showRemote(call.peer,s));
+ });
+ peer.on('error',e=>setStatus("Peer error "+e.type));
+}
+socket.on('room-users',c=>document.getElementById('pcount').textContent=c);
+socket.on('existing-peers',ids=>{console.log("Existing",ids);ids.forEach(id=>{if(id!==window.myId)callPeer(id);});});
+socket.on('new-peer',d=>{console.log("New",d.peerId);if(d.peerId!==window.myId)setTimeout(()=>callPeer(d.peerId),600);});
+function callPeer(pid){
+ if(peers[pid])return;
+ console.log("Calling",pid);
+ let call=peer.call(pid,localStream);
+ if(!call)return;
+ peers[pid]=call;
+ call.on('stream',s=>showRemote(pid,s));
+ call.on('close',()=>{delete peers[pid];let el=document.getElementById('r-'+pid);if(el)el.remove();});
+}
+function showRemote(id,stream){
+ let box=document.getElementById('r-'+id);
+ if(!box){
+  box=document.createElement('div');box.id='r-'+id;box.className='box';
+  let v=document.createElement('video');v.autoplay=true;v.playsInline=true;v.id='v-'+id;
+  let lab=document.createElement('div');lab.className='label';lab.textContent=id.slice(0,6);
+  box.appendChild(v);box.appendChild(lab);document.getElementById('remoteBox').appendChild(box);
+ }
+ document.getElementById('v-'+id).srcObject=stream;
+ setStatus("✅ Connected to peer!");
+}
+document.getElementById('mic').onclick=function(){let t=localStream.getAudioTracks()[0];if(t){t.enabled=!t.enabled;this.classList.toggle('on',t.enabled);}};
+document.getElementById('cam').onclick=function(){let t=localStream.getVideoTracks()[0];if(t){t.enabled=!t.enabled;this.classList.toggle('on',t.enabled);}};
+start();
 </script></body></html>
