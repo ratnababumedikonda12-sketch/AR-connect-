@@ -930,7 +930,7 @@ white-space:nowrap;
 ">
   <button id="micBtn" title="Microphone">🎤</button>
   <button id="camBtn" title="Camera">📹</button>
-  <button id="remoteAudioBtn" onclick="toggleRemoteAudio()" title="Remote Voice">🔊</button>
+  <button id="remoteAudioBtn" onclick="toggleRemoteAudio("https://ar-connect.onrender.com")" title="Remote Voice">🔊</button>
   <button id="handBtn" onclick="toggleHand()" title="Raise Hand">✋</button>
   <button onclick="toggleCalculator()" title="Calculator">🧮</button>
   <button onclick="toggleParticipants()" title="Participants">👥</button>
@@ -976,7 +976,7 @@ function autoJoinFromLink(){
   }
 }
 
-const socket = io();
+const socket = io("https://ar-connect.onrender.com");
 
 let localStream = null;
 let peerConnections = new Map();
@@ -995,7 +995,7 @@ function setStatus(text){
 
 
 let remoteAudioMuted = false;
-  function toggleRemoteAudio(){
+  function toggleRemoteAudio("https://ar-connect.onrender.com"){
   remoteAudioMuted = !remoteAudioMuted;
 
   document.querySelectorAll("video").forEach(v=>{
