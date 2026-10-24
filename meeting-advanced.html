@@ -1,0 +1,79 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AR Connect PRO</title>
+<style>
+body{margin:0;background:#000;color:#fff;font-family:Arial;overflow:hidden}
+#top{position:fixed;top:0;left:0;right:0;background:linear-gradient(90deg,#0a84ff,#00d4ff);padding:8px 12px;display:flex;justify-content:space-between;z-index:20;font-size:12px}
+#main{width:100vw;height:100vh;object-fit:cover;background:#111;display:block}
+#local{position:fixed;bottom:140px;right:10px;width:120px;height:160px;border-radius:12px;border:2px solid #0a84ff;object-fit:cover;z-index:15;transform:scaleX(-1);background:#222}
+#captions{position:fixed;bottom:90px;left:10px;right:10px;background:rgba(0,0,0,0.85);padding:8px 12px;border-radius:10px;font-size:13px;z-index:15;min-height:20px}
+#controls{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);background:#ffffffee;padding:6px 8px;border-radius:30px;display:flex;gap:4px;z-index:30;flex-wrap:wrap;max-width:98vw}
+#controls button{width:36px;height:36px;border-radius:50%;border:none;font-size:15px;background:#222;color:#fff}
+#controls .react{background:#0a84ff}
+#controls .end{background:#ff3b30}
+#status{position:fixed;top:44px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);padding:5px 10px;border-radius:12px;font-size:10px;z-index:20}
+.emoji-fly{position:fixed;bottom:100px;left:50%;font-size:40px;animation:fly 3s ease-out forwards;z-index:25}
+@keyframes fly{0%{transform:translate(-50%,0) scale(0)}20%{transform:translate(-50%,-50px) scale(1.5)}100%{transform:translate(-50%,-300px) scale(0);opacity:0}}
+#aiBox{position:fixed;top:80px;right:10px;background:rgba(0,0,0,0.7);padding:6px;border-radius:8px;font-size:9px;max-width:140px}
+#center{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;background:#222;padding:20px;border-radius:16px;text-align:center;width:80%;max-width:300px}
+#center button{background:#0a84ff;color:#fff;border:none;padding:12px 20px;border-radius:10px;font-size:16px;font-weight:bold;width:100%;margin-top:10px}
+</style></head><body>
+<div id="top"><div>🚀 AR PRO | RATNA99 | <span id="cnt">1</span> 👥 | 🤖 AI ON</div><div><button onclick="navigator.clipboard.writeText(location.href);alert('Copied')" style="background:#fff;border:none;color:#0a84ff;padding:3px 8px;border-radius:6px;font-size:11px">Copy</button> <button onclick="location.href='/'" style="background:#ff3b30;border:none;color:#fff;padding:3px 6px;border-radius:6px">Leave</button></div></div>
+<div id="status">Tap START for PRO</div>
+<video id="main" autoplay playsinline muted></video>
+<video id="local" autoplay playsinline muted></video>
+<div id="center"><h3>🚀 AR Connect PRO</h3><p style="font-size:12px;color:#aaa">AI + Translation + Reactions</p><button onclick="startAll()">▶️ START PRO</button></div>
+<div id="aiBox">🧠 AI: Waiting...</div>
+<div id="captions">📝 Live Captions: Tap 📝 to start</div>
+<div id="controls">
+<button id="mic">🎤</button><button id="cam">📹</button><button id="raise">✋</button>
+<button onclick="sendReaction('👍')" class="react">👍</button><button onclick="sendReaction('❤️')" class="react">❤️</button><button onclick="sendReaction('😂')" class="react">😂</button>
+<button id="captionBtn">📝</button><button id="trans">🌐</button><button id="blur">✨</button><button id="low">📶</button><button onclick="location.href='/'" class="end">📞</button>
+</div>
+<script src="https://ar-connect.onrender.com/socket.io/socket.io.js"></script><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+let socket,peer,localStream,roomId=new URLSearchParams(location.search).get('room')||'RATNA99',remoteS=null,peerId=null,lowMode=false,blurOn=false,captionOn=false,recognition=null,transOn=false;
+let mainV=document.getElementById('main'),localV=document.getElementById('local');
+let setS=t=>document.getElementById('status').textContent=t;
+let capEl=document.getElementById('captions');
+async function startAll(){
+ document.getElementById('center').style.display='none';
+ socket=io("https://ar-connect.onrender.com",{transports:["websocket","polling"]});
+ try{
+  let h=lowMode?240:720;
+  localStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:h},height:{ideal:h}},audio:true});
+  localV.srcObject=localStream;await localV.play();
+  mainV.srcObject=localStream;await mainV.play();
+  setS("✅ PRO Ready - HD | Share link");
+  initPeer();
+ }catch(e){setS("Error: "+e.message);document.getElementById('center').style.display='block';}
+}
+function initPeer(){
+ let ice=[{urls:"stun:stun.l.google.com:19302"},{urls:"turn:openrelay.metered.ca:80",username:"openrelayproject",credential:"openrelayproject"}];
+ peer=new Peer({config:{iceServers:ice}});
+ peer.on('open',id=>{peerId=id;socket.emit("join-room",{meetingId:roomId,userId:id});socket.emit("register-peer",{meetingId:roomId,peerId:id});});
+ peer.on('call',call=>{call.answer(localStream);call.on('stream',s=>handleRemote(s));});
+ socket.on('room-users',c=>document.getElementById('cnt').textContent=c);
+ socket.on('existing-peers',ids=>ids.forEach(id=>{if(id!==peerId)setTimeout(()=>callPeer(id),600);}));
+ socket.on('new-peer',d=>{if(d.peerId!==peerId)setTimeout(()=>callPeer(d.peerId),600);});
+ socket.on('reaction',d=>showEmoji(d.emoji));
+ socket.on('raise-hand',d=>{setS("✋ "+d.user+" raised hand!");showEmoji('✋');});
+ socket.on('caption',d=>{capEl.innerHTML="📝 "+d.user+": "+d.text+"<br><small style='color:#0a84ff'>🌐 "+d.trans+"</small>";});
+}
+function callPeer(pid){if(!localStream)return;let call=peer.call(pid,localStream);call.on('stream',s=>handleRemote(s));}
+function handleRemote(s){remoteS=s;mainV.srcObject=s;mainV.play();setS("✅ FRIEND LIVE! PRO");document.getElementById('cnt').textContent='2';}
+document.getElementById('mic').onclick=function(){let t=localStream.getAudioTracks()[0];t.enabled=!t.enabled;this.style.background=t.enabled?"#222":"#ff3b30";};
+document.getElementById('cam').onclick=function(){let t=localStream.getVideoTracks()[0];t.enabled=!t.enabled;this.style.background=t.enabled?"#222":"#ff3b30";};
+document.getElementById('raise').onclick=()=>{socket.emit('raise-hand',{meetingId:roomId,user:'You'});setS("✋ You raised hand");showEmoji('✋');};
+function sendReaction(e){showEmoji(e);socket.emit('reaction',{meetingId:roomId,emoji:e});}
+function showEmoji(e){let d=document.createElement('div');d.className='emoji-fly';d.textContent=e;document.body.appendChild(d);setTimeout(()=>d.remove(),3000);}
+document.getElementById('captionBtn').onclick=()=>{
+ if(!captionOn){captionOn=true;let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert("Captions not supported");return;}recognition=new SR();recognition.lang='te-IN';recognition.continuous=true;recognition.interimResults=true;
+ recognition.onresult=async (ev)=>{
+  let txt='';for(let i=ev.resultIndex;i<ev.results.length;i++)txt+=ev.results[i][0].transcript;
+  if(txt){capEl.textContent="📝 You: "+txt;let transTxt=txt;if(transOn){try{let r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=te|en`);let j=await r.json();transTxt=j.responseData.translatedText||txt;}catch(e){}} socket.emit('caption',{meetingId:roomId,user:'You',text:txt,trans:transTxt});capEl.innerHTML=`📝 You: ${txt}<br><small style='color:#0a84ff'>🌐 ${transTxt}</small>`;}
+ };recognition.start();setS("📝 Captions ON - Telugu");document.getElementById('captionBtn').style.background="#0a84ff";}
+ else{captionOn=false;if(recognition)recognition.stop();setS("📝 Captions OFF");document.getElementById('captionBtn').style.background="#222";}
+};
+document.getElementById('trans').onclick=function(){transOn=!transOn;this.style.background=transOn?"#0a84ff":"#222";setS(transOn?"🌐 Translation ON - TE->EN":"🌐 Translation OFF");};
+document.getElementById('low').onclick=async function(){lowMode=!lowMode;this.style.background=lowMode?"#0a84ff":"#222";if(localStream)localStream.getTracks().forEach(t=>t.stop());let h=lowMode?240:720;localStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:h},height:{ideal:h}},audio:true});localV.srcObject=localStream;mainV.srcObject=remoteS||localStream;localV.play();mainV.play();setS(lowMode?"📶 Low-Data ON":"📶 HD ON");};
+document.getElementById('blur').onclick=function(){blurOn=!blurOn;this.style.background=blurOn?"#0a84ff":"#222";if(blurOn){localV.style.filter="blur(8px)";setS("✨ Blur ON");}else{localV.style.filter="none";setS("✨ Blur OFF");}};
+</script></body></html>
