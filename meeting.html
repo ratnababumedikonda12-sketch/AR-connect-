@@ -1,58 +1,28 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AR Connect HD</title>
-<style>
-body{margin:0;background:#000;color:#fff;font-family:Arial;overflow:hidden}
-#top{position:fixed;top:0;left:0;right:0;background:#0a84ff;padding:8px 12px;display:flex;justify-content:space-between;z-index:10;font-size:13px}
-#mainVideo{width:100vw;height:100vh;object-fit:cover;background:#000}
-#local{position:fixed;bottom:80px;right:12px;width:110px;height:150px;border-radius:12px;border:2px solid #fff;object-fit:cover;z-index:15;transform:scaleX(-1);background:#111}
-#status{position:fixed;top:40px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);padding:5px 12px;border-radius:15px;font-size:12px;z-index:10}
-#controls{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(30,30,30,0.9);padding:8px 16px;border-radius:30px;display:flex;gap:12px;z-index:20}
-#controls button{width:44px;height:44px;border-radius:50%;border:none;font-size:18px;background:#333;color:#fff}
-#controls .end{background:#ff3b30}
-.label{position:fixed;bottom:85px;right:14px;background:rgba(0,0,0,0.7);padding:2px 6px;border-radius:4px;font-size:10px;z-index:16}
-</style></head><body>
-<div id="top"><div>🚀 AR Connect - <span id="roomId"></span> | <span id="pcount">1</span> user</div><div><button onclick="navigator.clipboard.writeText(location.href);alert('Copied!')" style="background:#fff;border:none;color:#0a84ff;padding:3px 10px;border-radius:6px;font-weight:bold">Copy</button></div></div>
-<div id="status">Starting HD camera...</div>
-<video id="mainVideo" autoplay playsinline></video>
-<video id="local" autoplay muted playsinline></video>
-<div class="label">You</div>
-<div id="controls"><button id="mic">🎤</button><button id="cam">📹</button><button id="switch">🔄</button><button onclick="location.href='/'" class="end">📞</button></div>
-<script src="https://ar-connect.onrender.com/socket.io/socket.io.js"></script>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AR Connect</title>
+<style>body{margin:0;background:#000;color:#fff;font-family:Arial;overflow:hidden}#top{position:fixed;top:0;left:0;right:0;background:#0a84ff;padding:8px 12px;display:flex;justify-content:space-between;z-index:10;font-size:13px}#main{width:100vw;height:100vh;object-fit:cover;background:#111}#local{position:fixed;bottom:90px;right:10px;width:110px;height:150px;border-radius:12px;border:2px solid #fff;object-fit:cover;z-index:15;transform:scaleX(-1);background:#111}#controls{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(20,20,20,0.95);padding:8px 12px;border-radius:30px;display:flex;gap:8px;z-index:20}#controls button{width:42px;height:42px;border-radius:50%;border:none;font-size:16px;background:#333;color:#fff}#controls .end{background:#ff3b30}#status{position:fixed;top:42px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);padding:4px 10px;border-radius:12px;font-size:11px;z-index:10}</style></head><body>
+<div id="top"><div>🚀 <span id="rid"></span> | <span id="cnt">1</span> user</div><div><button onclick="navigator.clipboard.writeText(location.href)" style="background:#fff;border:none;color:#0a84ff;padding:4px 8px;border-radius:6px">Copy</button> <button onclick="location.href='/'" style="background:#ff3b30;border:none;color:#fff;padding:4px 8px;border-radius:6px">Leave</button></div></div>
+<div id="status">Connecting...</div>
+<video id="main" autoplay playsinline></video><video id="local" autoplay muted playsinline></video>
+<div id="controls"><button id="mic">🎤</button><button id="cam">📹</button><button id="flip">🔄</button><button id="screen">🖥️</button><button id="chatBtn">💬</button><button onclick="location.href='/'" class="end">📞</button></div>
+<script src="https://ar-connect.onrender.com/socket.io/socket.io.js"></script><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-let socket,peer,localStream,roomId=new URLSearchParams(location.search).get('room')||'RATNA99',remoteStream=null;
-document.getElementById('roomId').textContent=roomId;
-let mainV=document.getElementById('mainVideo'),localV=document.getElementById('local');
-function setStatus(s){document.getElementById('status').textContent=s;}
+let socket,peer,localStream,roomId=new URLSearchParams(location.search).get('room')||'RATNA99',remoteS=null,facing='user';
+document.getElementById('rid').textContent=roomId;
+let mainV=document.getElementById('main'),localV=document.getElementById('local');
+let setS=t=>document.getElementById('status').textContent=t;
 socket=io("https://ar-connect.onrender.com",{transports:["websocket"]});
-async function start(){
- try{localStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:"user"},audio:true});}
- catch(e){localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});}
- localV.srcObject=localStream;
- mainV.srcObject=localStream;
- setStatus("✅ You - Waiting for friend...");
- peer=new Peer();
- peer.on('open',id=>{
-  socket.emit("join-room",{meetingId:roomId,userId:id});
-  socket.emit("register-peer",{meetingId:roomId,peerId:id});
-  window.myId=id;
- });
- peer.on('call',call=>{
-  call.answer(localStream);
-  call.on('stream',s=>{remoteStream=s;mainV.srcObject=s;setStatus("✅ Connected - Friend visible HD");document.getElementById('pcount').textContent="2";});
- });
- peer.on('error',e=>setStatus("Peer "+e.type));
-}
-socket.on('room-users',c=>document.getElementById('pcount').textContent=c);
-socket.on('existing-peers',ids=>ids.forEach(id=>{if(id!==window.myId)setTimeout(()=>callPeer(id),500);}));
-socket.on('new-peer',d=>{if(d.peerId!==window.myId)setTimeout(()=>callPeer(d.peerId),600);});
-function callPeer(pid){
- let call=peer.call(pid,localStream);
- call.on('stream',s=>{remoteStream=s;mainV.srcObject=s;setStatus("✅ Friend HD Connected");document.getElementById('pcount').textContent="2";});
-}
-let front=true;
-document.getElementById('switch').onclick=()=>{front=!front;setStatus("Switching...");};
+async function startCam(fm){try{localStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:fm},audio:true});}catch(e){localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});}localV.srcObject=localStream;if(!remoteS)mainV.srcObject=localStream;setS("✅ Camera ON - "+roomId);}
+startCam('user');let peerId=null;peer=new Peer();
+peer.on('open',id=>{peerId=id;socket.emit("join-room",{meetingId:roomId,userId:id});socket.emit("register-peer",{meetingId:roomId,peerId:id});});
+peer.on('call',call=>{call.answer(localStream);call.on('stream',s=>{remoteS=s;mainV.srcObject=s;setS("✅ 2 users connected");});});
+socket.on('room-users',c=>document.getElementById('cnt').textContent=c);
+socket.on('existing-peers',ids=>ids.forEach(id=>{if(id!==peerId)setTimeout(()=>callPeer(id),500);}));
+socket.on('new-peer',d=>{if(d.peerId!==peerId)setTimeout(()=>callPeer(d.peerId),500);});
+function callPeer(pid){let call=peer.call(pid,localStream);call.on('stream',s=>{remoteS=s;mainV.srcObject=s;setS("✅ Friend connected");});}
 document.getElementById('mic').onclick=function(){let t=localStream.getAudioTracks()[0];t.enabled=!t.enabled;this.style.background=t.enabled?"#333":"#ff3b30";};
 document.getElementById('cam').onclick=function(){let t=localStream.getVideoTracks()[0];t.enabled=!t.enabled;this.style.background=t.enabled?"#333":"#ff3b30";};
-mainV.onclick=()=>{if(remoteStream){mainV.srcObject=mainV.srcObject===localStream?remoteStream:localStream;}};
-start();
+document.getElementById('flip').onclick=async()=>{facing=facing==='user'?'environment':'user';await startCam(facing);};
+document.getElementById('screen').onclick=async()=>{try{let scr=await navigator.mediaDevices.getDisplayMedia({video:true});mainV.srcObject=scr;scr.getVideoTracks()[0].onended=()=>{mainV.srcObject=remoteS||localStream;};setS("Screen share");}catch(e){}};
+document.getElementById('chatBtn').onclick=()=>{let m=prompt("Message:");if(m)socket.emit('chat-message',{meetingId:roomId,msg:m});};
+mainV.onclick=()=>{if(remoteS){mainV.srcObject=mainV.srcObject===localStream?remoteS:localStream;}};
 </script></body></html>
