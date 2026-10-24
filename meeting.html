@@ -1,35 +1,26 @@
 <!DOCTYPE html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AR Connect - RATNA999</title>
+<title>AR Connect</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#fff;font-family:system-ui}.top{display:flex;justify-content:space-between;padding:8px;background:#111;flex-wrap:wrap;gap:4px}.pill{background:#222;border-radius:20px;padding:6px 10px;font-size:12px}.videos{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}.vid{position:relative;background:#111;border-radius:14px;overflow:hidden;aspect-ratio:4/3}.vid video{width:100%;height:100%;object-fit:cover}.label{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.7);padding:3px 6px;border-radius:6px;font-size:11px}.trans{margin:8px;background:#0a1930;border-radius:14px;padding:10px}.trans select{width:100%;padding:8px;border-radius:8px;background:#111;color:#fff;border:1px solid #333;margin:4px 0}.trans button{width:100%;padding:10px;border-radius:10px;border:0;background:#1e3a8a;color:#fff;margin:4px 0}.controls{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;background:#111;padding:8px 12px;border-radius:30px}.controls button{width:40px;height:40px;border-radius:50%;border:0;background:#222;color:#fff}.end{background:#dc2626!important}#log{font-size:11px;color:#4ade80;padding:4px}</style></head>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#fff;font-family:system-ui}.top{display:flex;justify-content:space-between;padding:8px;background:#111;gap:4px}.pill{background:#222;border-radius:20px;padding:6px 10px;font-size:12px}.videos{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}.vid{position:relative;background:#111;border-radius:14px;overflow:hidden;aspect-ratio:4/3;border:2px solid #222}.vid video{width:100%;height:100%;object-fit:cover}.vid.active{border-color:#22c55e}.label{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.7);padding:3px 6px;border-radius:6px;font-size:11px}.trans{margin:8px;background:#0a1930;border-radius:14px;padding:10px}.trans select{width:100%;padding:8px;border-radius:8px;background:#111;color:#fff;border:1px solid #333;margin:4px 0}.trans button{width:100%;padding:10px;border-radius:10px;border:0;background:#1e3a8a;color:#fff;margin:4px 0}.controls{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;background:#111;padding:8px 12px;border-radius:30px}.controls button{width:40px;height:40px;border-radius:50%;border:0;background:#222;color:#fff}#log{font-size:11px;color:#4ade80}</style></head>
 <body>
-<div class="top">
-<div class="pill">👥 <span id="pCount">1</span></div>
-<div class="pill">🌐 RATNA999</div>
-<div class="pill" id="status">Connecting...</div>
-</div>
+<div class="top"><div class="pill">👥 <span id="pCount">1</span></div><div class="pill">🌐 RATNA999</div><div class="pill" id="status">Connecting...</div></div>
 <div class="videos">
-<div class="vid"><video id="myVideo" autoplay muted playsinline></video><div class="label">You</div></div>
-<div class="vid"><video id="rv" autoplay playsinline></video><div class="label" id="rLabel">Waiting...</div></div>
+<div class="vid"><video id="myVideo" autoplay muted playsinline></video><div class="label">You (Camera 1)</div></div>
+<div class="vid" id="rvBox"><video id="rv" autoplay muted playsinline></video><div class="label" id="rLabel">Friend - Waiting...</div></div>
 </div>
 <div class="trans">
-<b style="font-size:13px">🎙️ Voice Translation</b><br>
+<b>🎙️ Voice Translation</b><br>
 <select id="fromL"><option value="te-IN">తెలుగు</option><option value="en-US">English</option><option value="hi-IN">हिन्दी</option></select>
 <select id="toL"><option value="en-US">English</option><option value="te-IN">తెలుగు</option></select>
 <button id="startT">🎤 Start Voice Translation</button>
 <button id="stopT" style="background:#92400e">⏹️ Stop</button>
-<div id="tText" style="margin-top:6px;font-size:13px">Ready</div>
+<div id="tText" style="margin-top:6px">Ready</div>
 <div id="log">Init...</div>
-<button onclick="share()" style="background:#16a34a;margin-top:8px">🔗 COPY LINK FOR FRIEND</button>
+<button onclick="share()" style="background:#16a34a;margin-top:8px;width:100%;padding:12px;border-radius:10px;border:0;color:#fff;font-weight:700">🔗 COPY LINK FOR FRIEND - CLICK HERE</button>
+<button onclick="document.getElementById('rv').play(); log('Manual play clicked')" style="background:#334155;margin-top:6px;width:100%;padding:8px;border-radius:8px;border:0;color:#fff">▶️ If friend not visible, Click to Play</button>
 </div>
-<div class="controls">
-<button onclick="toggleMic()" id="mBtn">🎤</button>
-<button onclick="toggleCam()" id="cBtn">📷</button>
-<button onclick="share()">🔗</button>
-<button onclick="location.reload()">🔄</button>
-<button onclick="location.href='index.html'" class="end">📞</button>
-</div>
+<div class="controls"><button onclick="toggleMic()" id="mBtn">🎤</button><button onclick="toggleCam()" id="cBtn">📷</button><button onclick="share()">🔗</button><button onclick="location.reload()">🔄</button><button onclick="location.href='index.html'" style="background:#dc2626;border-radius:50%;width:40px;height:40px;border:0;color:#fff">📞</button></div>
 <script>
 const ROOM='RATNA999';
 const myVideo=document.getElementById('myVideo');
@@ -38,66 +29,59 @@ const logEl=document.getElementById('log');
 let localStream, peer, myId;
 function log(t){logEl.innerText=t; console.log(t);}
 const urlParams=new URLSearchParams(location.search);
-const hostIdFromUrl=urlParams.get('host');
-
+const hostId=urlParams.get('host');
 async function init(){
  try{
-  localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-  myVideo.srcObject=localStream;
+  localStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true});
+  myVideo.srcObject=localStream; await myVideo.play().catch(()=>{});
   myId='ratna-'+ROOM+'-'+Math.floor(Math.random()*90000+10000);
   log('My ID: '+myId);
   peer=new Peer(myId);
   peer.on('open', id=>{
-   document.getElementById('status').innerText='✅ Connected';
-   document.getElementById('status').style.background='#0a2a12';
-   document.getElementById('status').style.color='#4ade80';
-   log('Ready as '+id);
-   if(hostIdFromUrl && hostIdFromUrl!==id){
-     log('Found friend ID in link: '+hostIdFromUrl+' - Calling...');
-     setTimeout(()=>callPeer(hostIdFromUrl),1000);
-   } else {
-     log('You are HOST - Share link with friend');
-   }
+   document.getElementById('status').innerText='✅ Connected - '+id.slice(-5);
+   log('Ready as '+id+(hostId?' | Calling '+hostId.slice(-5):' | HOST - Share link'));
+   if(hostId && hostId!==id){ setTimeout(()=>callPeer(hostId),800); }
   });
-  peer.on('call', call=>{
-   log('Incoming call from friend!');
+  peer.on('call', async call=>{
+   log('Incoming call! Answering...');
    call.answer(localStream);
-   call.on('stream', s=>{
+   call.on('stream', async s=>{
+    log('✅ STREAM RECEIVED! Showing friend...');
     rv.srcObject=s;
-    document.getElementById('rLabel').innerText='Friend';
+    document.getElementById('rvBox').classList.add('active');
+    try{ await rv.play(); }catch(e){ log('Play blocked, click manual play button'); }
+    document.getElementById('rLabel').innerText='Friend - LIVE';
     document.getElementById('pCount').innerText='2';
     document.getElementById('status').innerText='✅ 2 Connected';
-    log('✅ FRIEND JOINED! 2 participants!');
    });
   });
-  peer.on('error', e=>{ log('Error: '+e.type); });
+  peer.on('error', e=>{ log('Peer error: '+e.type); if(e.type==='peer-unavailable'){ log('Friend not yet online - waiting...'); } });
  }catch(e){ log('Camera error: '+e.message); }
 }
-
-function callPeer(pid){
- log('Calling friend '+pid+'...');
+async function callPeer(pid){
+ log('Calling friend '+pid.slice(-5)+'...');
  let call=peer.call(pid, localStream);
- if(!call){ log('Call failed - retry in 2s'); setTimeout(()=>callPeer(pid),2000); return; }
- call.on('stream', s=>{
+ if(!call){ log('Call failed retry'); setTimeout(()=>callPeer(pid),1500); return; }
+ call.on('stream', async s=>{
+  log('✅ FRIEND STREAM RECEIVED!');
   rv.srcObject=s;
-  document.getElementById('rLabel').innerText='Friend';
+  document.getElementById('rvBox').classList.add('active');
+  setTimeout(async()=>{ try{ await rv.play(); }catch(e){} },300);
+  document.getElementById('rLabel').innerText='Friend - LIVE';
   document.getElementById('pCount').innerText='2';
-  document.getElementById('status').innerText='✅ 2 Connected';
-  log('✅ CONNECTED TO FRIEND! 2 participants!');
+  document.getElementById('status').innerText='✅ 2 Connected - Friend Joined!';
  });
- call.on('error', ()=>{ log('Call error - retrying...'); setTimeout(()=>callPeer(pid),2000); });
- call.on('close', ()=>{ log('Friend disconnected'); document.getElementById('pCount').innerText='1'; });
+ call.on('error', ()=>{ log('Call error retry...'); setTimeout(()=>callPeer(pid),2000); });
+ call.on('close', ()=>{ log('Friend left'); document.getElementById('pCount').innerText='1'; });
 }
-
 function share(){
  let link=location.origin+location.pathname+'?room='+ROOM+'&host='+myId;
  navigator.clipboard.writeText(link);
- log('✅ LINK COPIED! Send to friend: '+link);
- alert('✅ Link Copied!\n\n'+link+'\n\nFriend ki pampu - Vaadu open cheyagane iddaru kanipistaru!');
+ log('✅ LINK COPIED! '+link.slice(-30));
+ alert('✅ LINK COPIED!\n\n'+link+'\n\nFriend ki pampu! Vaadu Chrome lo open cheyagane iddaru kanipistaru!');
 }
-function toggleMic(){let t=localStream.getAudioTracks()[0]; t.enabled=!t.enabled; document.getElementById('mBtn').style.opacity=t.enabled?1:0.3;}
-function toggleCam(){let t=localStream.getVideoTracks()[0]; t.enabled=!t.enabled; document.getElementById('cBtn').style.opacity=t.enabled?1:0.3;}
-
+function toggleMic(){let t=localStream.getAudioTracks()[0]; t.enabled=!t.enabled;}
+function toggleCam(){let t=localStream.getVideoTracks()[0]; t.enabled=!t.enabled;}
 let rec;
 document.getElementById('startT').onclick=()=>{
  if(!('webkitSpeechRecognition' in window)){ alert('Chrome lo open chey'); return; }
@@ -105,7 +89,6 @@ document.getElementById('startT').onclick=()=>{
  rec.onresult=e=>{ let t=''; for(let i=e.resultIndex;i<e.results.length;i++) t+=e.results[i][0].transcript; document.getElementById('tText').innerText='🗣️ '+t; };
  rec.start(); document.getElementById('tText').innerText='🎧 Listening...';
 };
-document.getElementById('stopT').onclick=()=>{ if(rec) rec.stop(); document.getElementById('tText').innerText='Ready'; };
-
+document.getElementById('stopT').onclick=()=>{ if(rec) rec.stop(); };
 init();
 </script></body></html>
