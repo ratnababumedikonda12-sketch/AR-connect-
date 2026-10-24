@@ -1,23 +1,18 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AR Connect - Working</title>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AR Connect</title>
 <style>body{margin:0;background:#000;height:100vh;overflow:hidden}#top{position:fixed;top:0;left:0;right:0;background:#111;color:#fff;padding:8px 12px;display:flex;justify-content:space-between;z-index:10;font-family:Arial;font-size:14px}#jitsi{width:100vw;height:100vh;border:none;margin-top:38px}</style></head><body>
-<div id="top"><div>🚀 AR Connect - <span id="room"></span> | 👥 <span id="count">Ready</span></div><div><button onclick="navigator.clipboard.writeText(location.href);alert('Link copied!')" style="background:#0a84ff;border:none;color:#fff;padding:4px 10px;border-radius:6px">Copy Link</button></div></div>
+<div id="top"><div>🚀 AR Connect - <span id="room"></span> | 👥 <span id="count">Live</span></div><div><button onclick="navigator.clipboard.writeText(location.href);alert('Copied!')" style="background:#0a84ff;border:none;color:#fff;padding:4px 10px;border-radius:6px">Copy Link</button></div></div>
 <div id="jitsi"></div>
 <script src="https://meet.jit.si/external_api.js"></script>
 <script>
-const roomId = new URLSearchParams(location.search).get('room') || new URLSearchParams(location.search).get('meeting') || 'ARConnect_'+Math.random().toString(36).substr(2,6);
+const roomId=new URLSearchParams(location.search).get('room')||new URLSearchParams(location.search).get('meeting')||'AR_'+Date.now();
 document.getElementById('room').textContent=roomId;
-const domain="meet.jit.si";
-const options={
- roomName:"ARConnect_"+roomId,
- width:"100%",
- height:window.innerHeight-38,
+const api=new JitsiMeetExternalAPI("meet.jit.si",{
+ roomName:"ARConnect_"+roomId.replace(/[^a-zA-Z0-9]/g,'_'),
+ width:"100%",height:window.innerHeight-38,
  parentNode:document.querySelector('#jitsi'),
- configOverwrite:{startWithAudioMuted:false,startWithVideoMuted:false,prejoinPageEnabled:false},
- interfaceConfigOverwrite:{SHOW_JITSI_WATERMARK:false,SHOW_WATERMARK_FOR_GUESTS:false,TOOLBAR_BUTTONS:['microphone','camera','desktop','chat','raisehand','hangup','tileview']},
- userInfo:{displayName:"User "+Math.floor(Math.random()*1000)}
-};
-const api=new JitsiMeetExternalAPI(domain,options);
-api.addListener('participantJoined',()=>{document.getElementById('count').textContent=document.querySelectorAll('iframe').length+' Joined';});
+ configOverwrite:{prejoinPageEnabled:false,prejoinConfig:{enabled:false},startWithAudioMuted:false,startWithVideoMuted:false,defaultLanguage:'en'},
+ interfaceConfigOverwrite:{SHOW_JITSI_WATERMARK:false,TOOLBAR_BUTTONS:['microphone','camera','desktop','chat','raisehand','hangup','tileview'],DEFAULT_BACKGROUND:'#000'},
+ userInfo:{displayName:"Ratna User"}
+});
 api.addListener('videoConferenceJoined',()=>{document.getElementById('count').textContent='Connected ✅';});
-</script>
-</body></html>
+</script></body></html>
