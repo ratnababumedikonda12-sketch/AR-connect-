@@ -2,43 +2,43 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AR Connect v2.1 - Advanced</title>
+<title>AR Connect v2.1</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0e1a;color:white;font-family:system-ui;overflow:hidden}
-.topbar{height:44px;background:#111a2e;border-bottom:1px solid #1e3a5f;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:13px}
-.topbar span{background:#0a84ff22;padding:4px 10px;border-radius:20px;margin-left:6px;border:1px solid #0a84ff44}
-.main{display:flex;height:calc(100vh - 130px);gap:8px;padding:8px}
-.left{width:260px;background:#111a2e;border-radius:12px;padding:10px;display:none}
-@media(min-width:800px){.left{display:block}}
-.video-wrap{flex:1;background:#000;border-radius:16px;position:relative;overflow:hidden;border:1px solid #1e3a5f}
-#remoteVideo{width:100%;height:100%;object-fit:cover}
-#localVideo{position:absolute;right:12px;bottom:80px;width:110px;height:70px;border-radius:10px;border:2px solid #0a84ff;object-fit:cover;background:#000}
-.caption-box{position:absolute;bottom:12px;left:12px;right:130px;background:#000c;border:1px solid #0a84ff44;border-radius:10px;padding:10px;font-size:13px;backdrop-filter:blur(10px)}
-.controls{height:70px;background:#111a2e;display:flex;align-items:center;justify-content:center;gap:10px;border-top:1px solid #1e3a5f}
-.btn{width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;font-size:18px}
-.mic{background:#1e3a5f;color:white}.cam{background:#1e3a5f;color:white}.leave{background:#ff3b30;color:white}
+body{background:#0a0e1a;color:white;font-family:system-ui;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+.topbar{height:42px;min-height:42px;background:#111a2e;border-bottom:1px solid #1e3a5f;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:12px}
+.topbar span{background:#0a84ff33;padding:3px 8px;border-radius:12px;margin-left:4px;border:1px solid #0a84ff55;font-size:11px}
+.main{flex:1;display:flex;gap:6px;padding:6px;overflow:hidden}
+.video-wrap{flex:1;background:#000;border-radius:16px;position:relative;overflow:hidden;border:1px solid #1e3a5f;display:flex;align-items:center;justify-content:center}
+#remoteVideo,#localVideoFull{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0}
+#localPip{position:absolute;right:10px;bottom:70px;width:100px;height:140px;border-radius:12px;border:2px solid #0a84ff;object-fit:cover;background:#111;z-index:10}
+.caption-box{position:absolute;bottom:8px;left:8px;right:120px;background:rgba(0,0,0,0.75);border:1px solid #0a84ff44;border-radius:10px;padding:8px;font-size:12px;z-index:11}
+.controls{height:60px;min-height:60px;background:#111a2e;display:flex;align-items:center;justify-content:center;gap:12px;border-top:1px solid #1e3a5f}
+.btn{width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:18px}
+.mic,.cam{background:#1e3a5f;color:white}.leave{background:#ff3b30;color:white}
+.info{width:0;display:none}
+@media(min-width:900px){.info{width:220px;display:block;background:#111a2e;border-radius:12px;padding:10px;font-size:12px}}
 </style>
 </head>
 <body>
 <div class="topbar">
-<div>🅰️ AR Connect <span id="roomId">RATNA99</span> <span>5G Secured</span> <span>🤖 AI Assistant - Active</span></div>
-<div id="status">● Connected</div>
+<div>🅰️ AR Connect <span id="roomId">RATNA99</span> <span>5G Secured</span> <span>🤖 AI Active</span></div>
+<div>● Connected</div>
 </div>
 <div class="main">
-<div class="left">
-<b>Live Location</b><br><small>Chanda Nagar, Hyd</small><br><br>
-<b>Participants</b> <span id="count">1</span><br>
-• You<br>• Friend<br><br>
-<small>Blur: ON | Captions: Telugu→English</small>
+<div class="info">
+<b>Live Location</b><br>Chanda Nagar, Hyd<br><br>
+<b>Participants <span id="count">1</span></b><br>• You<br>• Friend<br><br>
+Blur: ON | Captions: Telugu→English
 </div>
-<div class="video-wrap">
-<video id="remoteVideo" autoplay playsinline></video>
-<video id="localVideo" autoplay muted playsinline></video>
+<div class="video-wrap" id="wrap">
+<video id="localVideoFull" autoplay muted playsinline></video>
+<video id="remoteVideo" autoplay playsinline style="display:none"></video>
+<video id="localPip" autoplay muted playsinline></video>
 <div class="caption-box">
-<b>LIVE CAPTIONS - Telugu → English</b><br>
-<span id="telugu">అందరికీ నమస్కారం, ఈ ప్రాజెక్ట్ అప్డేట్ గురించి చర్చిద్దాం</span><br>
-<span id="english" style="color:#0a84ff">○ Hello everyone, let's discuss this project update...</span>
+<b style="font-size:10px">LIVE CAPTIONS - Telugu → English</b><br>
+<span id="telugu">అందరికీ నమస్కారం, ఈ ప్రాజెక్ట్ గురించి చర్చిద్దాం</span><br>
+<span id="english" style="color:#5eb0ff">○ Hello everyone, let's discuss...</span>
 </div>
 </div>
 </div>
@@ -46,25 +46,44 @@ body{background:#0a0e1a;color:white;font-family:system-ui;overflow:hidden}
 <button class="btn mic" onclick="toggleMic()">🎤</button>
 <button class="btn cam" onclick="toggleCam()">📹</button>
 <button class="btn" style="background:#1e3a5f">✋</button>
-<button class="btn" style="background:#1e3a5f">😍</button>
 <button class="btn leave" onclick="location.href='/'">📞</button>
 </div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const urlParams=new URLSearchParams(location.search);const roomId=urlParams.get('room')||'RATNA99';
+const roomId=new URLSearchParams(location.search).get('room')||'RATNA99';
 document.getElementById('roomId').innerText=roomId;
-let localStream,pc;let micOn=true,camOn=true;
+let localStream,pc,micOn=true,camOn=true;
 const socket=io();
-const config={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'}]};
-async function start(){localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});document.getElementById('localVideo').srcObject=localStream;socket.emit('join-room',roomId);socket.on('user-joined',createOffer);socket.on('offer',handleOffer);socket.on('answer',handleAnswer);socket.on('ice-candidate',c=>pc&&pc.addIceCandidate(c));socket.on('user-count',c=>document.getElementById('count').innerText=c);}
-function createPC(){pc=new RTCPeerConnection(config);localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));pc.onicecandidate=e=>e.candidate&&socket.emit('ice-candidate',{roomId,candidate:e.candidate});pc.ontrack=e=>document.getElementById('remoteVideo').srcObject=e.streams[0];}
-async function createOffer(){createPC();const offer=await pc.createOffer();await pc.setLocalDescription(offer);socket.emit('offer',{roomId,offer});}
-async function handleOffer({offer}){createPC();await pc.setRemoteDescription(offer);const answer=await pc.createAnswer();await pc.setLocalDescription(answer);socket.emit('answer',{roomId,answer});}
+const cfg={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'}]};
+async function start(){
+try{
+localStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true});
+document.getElementById('localVideoFull').srcObject=localStream;
+document.getElementById('localPip').srcObject=localStream;
+}catch(e){alert('Camera allow chey bro! '+e);}
+socket.emit('join-room',roomId);
+socket.on('user-joined',createOffer);
+socket.on('offer',handleOffer);
+socket.on('answer',handleAnswer);
+socket.on('ice-candidate',c=>pc&&pc.addIceCandidate(c));
+socket.on('user-count',c=>document.getElementById('count').innerText=c);
+}
+function createPC(){
+pc=new RTCPeerConnection(cfg);
+localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+pc.onicecandidate=e=>e.candidate&&socket.emit('ice-candidate',{roomId,candidate:e.candidate});
+pc.ontrack=e=>{
+const rv=document.getElementById('remoteVideo');
+rv.style.display='block';
+rv.srcObject=e.streams[0];
+document.getElementById('localVideoFull').style.display='none';
+};
+}
+async function createOffer(){createPC();const o=await pc.createOffer();await pc.setLocalDescription(o);socket.emit('offer',{roomId,offer:o});}
+async function handleOffer({offer}){createPC();await pc.setRemoteDescription(offer);const a=await pc.createAnswer();await pc.setLocalDescription(a);socket.emit('answer',{roomId,answer:a});}
 async function handleAnswer({answer}){await pc.setRemoteDescription(answer);}
 function toggleMic(){micOn=!micOn;localStream.getAudioTracks()[0].enabled=micOn;}
 function toggleCam(){camOn=!camOn;localStream.getVideoTracks()[0].enabled=camOn;}
-// Fake live captions demo
-let telWords=["అందరికీ నమస్కారం","ఈ ప్రాజెక్ట్ గురించి","చర్చిద్దాం","Hello team"];let i=0;setInterval(()=>{document.getElementById('telugu').innerText=telWords[i%telWords.length];i++;},3000);
 start();
 </script>
 </body>
