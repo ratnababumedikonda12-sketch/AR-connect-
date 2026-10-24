@@ -1,90 +1,55 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AR Connect v2.1</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0e1a;color:white;font-family:system-ui;overflow:hidden;height:100vh;display:flex;flex-direction:column}
-.topbar{height:42px;min-height:42px;background:#111a2e;border-bottom:1px solid #1e3a5f;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:12px}
-.topbar span{background:#0a84ff33;padding:3px 8px;border-radius:12px;margin-left:4px;border:1px solid #0a84ff55;font-size:11px}
-.main{flex:1;display:flex;gap:6px;padding:6px;overflow:hidden}
-.video-wrap{flex:1;background:#000;border-radius:16px;position:relative;overflow:hidden;border:1px solid #1e3a5f;display:flex;align-items:center;justify-content:center}
-#remoteVideo,#localVideoFull{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0}
-#localPip{position:absolute;right:10px;bottom:70px;width:100px;height:140px;border-radius:12px;border:2px solid #0a84ff;object-fit:cover;background:#111;z-index:10}
-.caption-box{position:absolute;bottom:8px;left:8px;right:120px;background:rgba(0,0,0,0.75);border:1px solid #0a84ff44;border-radius:10px;padding:8px;font-size:12px;z-index:11}
-.controls{height:60px;min-height:60px;background:#111a2e;display:flex;align-items:center;justify-content:center;gap:12px;border-top:1px solid #1e3a5f}
-.btn{width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:18px}
-.mic,.cam{background:#1e3a5f;color:white}.leave{background:#ff3b30;color:white}
-.info{width:0;display:none}
-@media(min-width:900px){.info{width:220px;display:block;background:#111a2e;border-radius:12px;padding:10px;font-size:12px}}
-</style>
-</head>
-<body>
-<div class="topbar">
-<div>🅰️ AR Connect <span id="roomId">RATNA99</span> <span>5G Secured</span> <span>🤖 AI Active</span></div>
-<div>● Connected</div>
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AR v2.1</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#fff;font-family:system-ui;height:100vh;display:flex;flex-direction:column}
+.top{height:40px;background:#111a2e;display:flex;justify-content:space-between;align-items:center;padding:0 10px;font-size:12px;border-bottom:1px solid #1e3a5f}
+.top span{background:#0a84ff33;padding:2px 8px;border-radius:10px;margin-left:4px}
+#videos{flex:1;position:relative;background:#000}
+video{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;background:#000}
+#pip{width:90px;height:120px;right:10px;bottom:60px;left:auto;top:auto;border:2px solid #0a84ff;border-radius:10px;z-index:5}
+#cap{position:absolute;bottom:8px;left:8px;right:110px;background:#000a;padding:6px 8px;border-radius:8px;font-size:11px;z-index:6;border:1px solid #0a84ff44}
+.ctrl{height:56px;background:#111a2e;display:flex;justify-content:center;align-items:center;gap:14px}
+.b{width:44px;height:44px;border-radius:50%;border:0;font-size:18px}.r{background:#ff3b30;color:#fff}.m{background:#1e3a5f;color:#fff}
+</style></head><body>
+<div class="top"><div>🅰️ AR Connect <span id="r">RATNA99</span> <span>5G Secured</span> <span>🤖 AI Active</span></div><div id="c">1 user</div></div>
+<div id="videos">
+<video id="localFull" autoplay muted playsinline></video>
+<video id="remote" autoplay playsinline style="display:none"></video>
+<video id="pip" autoplay muted playsinline></video>
+<div id="cap">LIVE CAPTIONS Telugu→English<br>అందరికీ నమస్కారం<br><span style="color:#5eb0ff">Hello everyone</span></div>
 </div>
-<div class="main">
-<div class="info">
-<b>Live Location</b><br>Chanda Nagar, Hyd<br><br>
-<b>Participants <span id="count">1</span></b><br>• You<br>• Friend<br><br>
-Blur: ON | Captions: Telugu→English
-</div>
-<div class="video-wrap" id="wrap">
-<video id="localVideoFull" autoplay muted playsinline></video>
-<video id="remoteVideo" autoplay playsinline style="display:none"></video>
-<video id="localPip" autoplay muted playsinline></video>
-<div class="caption-box">
-<b style="font-size:10px">LIVE CAPTIONS - Telugu → English</b><br>
-<span id="telugu">అందరికీ నమస్కారం, ఈ ప్రాజెక్ట్ గురించి చర్చిద్దాం</span><br>
-<span id="english" style="color:#5eb0ff">○ Hello everyone, let's discuss...</span>
-</div>
-</div>
-</div>
-<div class="controls">
-<button class="btn mic" onclick="toggleMic()">🎤</button>
-<button class="btn cam" onclick="toggleCam()">📹</button>
-<button class="btn" style="background:#1e3a5f">✋</button>
-<button class="btn leave" onclick="location.href='/'">📞</button>
-</div>
+<div class="ctrl"><button class="b m" onclick="toggleM()">🎤</button><button class="b m" onclick="toggleC()">📹</button><button class="b r" onclick="location.href='/'">📞</button></div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const roomId=new URLSearchParams(location.search).get('room')||'RATNA99';
-document.getElementById('roomId').innerText=roomId;
-let localStream,pc,micOn=true,camOn=true;
-const socket=io();
-const cfg={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'}]};
-async function start(){
+const room=new URLSearchParams(location.search).get('room')||'RATNA99';
+document.getElementById('r').innerText=room;
+let ls,pc;
+const sock=io();
+const ice={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'}]};
+(async()=>{
 try{
-localStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true});
-document.getElementById('localVideoFull').srcObject=localStream;
-document.getElementById('localPip').srcObject=localStream;
-}catch(e){alert('Camera allow chey bro! '+e);}
-socket.emit('join-room',roomId);
-socket.on('user-joined',createOffer);
-socket.on('offer',handleOffer);
-socket.on('answer',handleAnswer);
-socket.on('ice-candidate',c=>pc&&pc.addIceCandidate(c));
-socket.on('user-count',c=>document.getElementById('count').innerText=c);
-}
-function createPC(){
-pc=new RTCPeerConnection(cfg);
-localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
-pc.onicecandidate=e=>e.candidate&&socket.emit('ice-candidate',{roomId,candidate:e.candidate});
-pc.ontrack=e=>{
-const rv=document.getElementById('remoteVideo');
-rv.style.display='block';
-rv.srcObject=e.streams[0];
-document.getElementById('localVideoFull').style.display='none';
-};
-}
-async function createOffer(){createPC();const o=await pc.createOffer();await pc.setLocalDescription(o);socket.emit('offer',{roomId,offer:o});}
-async function handleOffer({offer}){createPC();await pc.setRemoteDescription(offer);const a=await pc.createAnswer();await pc.setLocalDescription(a);socket.emit('answer',{roomId,answer:a});}
-async function handleAnswer({answer}){await pc.setRemoteDescription(answer);}
-function toggleMic(){micOn=!micOn;localStream.getAudioTracks()[0].enabled=micOn;}
-function toggleCam(){camOn=!camOn;localStream.getVideoTracks()[0].enabled=camOn;}
-start();
-</script>
-</body>
-</html>
+ls=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+localFull.srcObject=ls;pip.srcObject=ls;
+console.log('camera ok');
+}catch(e){alert('Camera Allow chey! Chrome permission lo camera ON chey: '+e.message);return;}
+sock.emit('join-room',room);
+sock.on('user-joined',async()=>{
+pc=new RTCPeerConnection(ice);
+ls.getTracks().forEach(t=>pc.addTrack(t,ls));
+pc.onicecandidate=e=>e.candidate&&sock.emit('ice-candidate',{roomId:room,candidate:e.candidate});
+const o=await pc.createOffer();await pc.setLocalDescription(o);sock.emit('offer',{roomId:room,offer:o});
+});
+sock.on('offer',async({offer})=>{
+pc=new RTCPeerConnection(ice);
+ls.getTracks().forEach(t=>pc.addTrack(t,ls));
+pc.onicecandidate=e=>e.candidate&&sock.emit('ice-candidate',{roomId:room,candidate:e.candidate});
+pc.ontrack=e=>{remote.style.display='block';remote.srcObject=e.streams[0];localFull.style.display='none';};
+await pc.setRemoteDescription(offer);
+const a=await pc.createAnswer();await pc.setLocalDescription(a);sock.emit('answer',{roomId:room,answer:a});
+});
+sock.on('answer',async({answer})=>{await pc.setRemoteDescription(answer);});
+sock.on('ice-candidate',c=>pc&&pc.addIceCandidate(c));
+sock.on('user-count',n=>document.getElementById('c').innerText=n+' user');
+})();
+function toggleM(){const t=ls.getAudioTracks()[0];t.enabled=!t.enabled}
+function toggleC(){const t=ls.getVideoTracks()[0];t.enabled=!t.enabled}
+</script></body></html>
