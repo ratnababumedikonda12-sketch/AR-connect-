@@ -1377,11 +1377,14 @@ async function startARPeerEngine(){
     console.log("🚀 AR PeerJS engine starting...");
     setStatus("🎥 Camera + Mic start అవుతోంది...");
 
-    arStream = await navigator.mediaDevices.getUserMedia({
+    
+  try{
+  arStream = await navigator.mediaDevices.getUserMedia({
+
       video:{
-        width:{ideal:1280,max:1920},
-        height:{ideal:720,max:1080},
-        frameRate:{ideal:30,max:30},
+        width:{ideal:640,max:640},
+        height:{ideal:480,max:480},
+        frameRate:{ideal:15},
         facingMode:"user"
       },
       audio:{
@@ -1392,7 +1395,14 @@ async function startARPeerEngine(){
       }
     });
 
-    console.log("🎥 AR V4 camera + microphone ready");
+    
+  }catch(e1){
+    console.warn("HD camera failed, trying low-res", e1);
+    setStatus("⚠️ HD fail - low camera trying...");
+    arStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
+  }
+  console.log("🎥 AR V4 camera + microphone ready")
+;
     setStatus("🎥 Camera + Mic ready — PeerJS connecting...");
 
     // Use PeerJS media stream as the main local stream
