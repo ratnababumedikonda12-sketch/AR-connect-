@@ -1,86 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AR CONNECT</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial;color:#fff}
-.card{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:40px 30px;border-radius:20px;text-align:center;max-width:400px;width:90%;border:1px solid rgba(255,255,255,0.2)}
-h1{font-size:28px;margin-bottom:5px}
-.sub{opacity:0.7;margin-bottom:30px;font-size:14px}
-.btn{width:100%;padding:15px;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer;margin:8px 0;transition:0.3s}
-.btn-primary{background:linear-gradient(90deg,#00f2fe,#4facfe);color:#000}
-.btn-secondary{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3)}
-.btn:hover{transform:scale(1.03)}
-input{width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.3);color:#fff;text-align:center;font-size:16px;margin:8px 0;outline:none}
-input::placeholder{color:rgba(255,255,255,0.5)}
-#status{margin-top:15px;font-size:13px;min-height:20px;color:#00ff88}
-</style>
-<link rel="manifest" href="manifest.json"><link rel="icon" href="logo.png"><meta name="theme-color" content="#0a84ff"></head>
-<body>
-<div class="card">
-<h1>🚀 AR CONNECT</h1>
-<div class="sub">Connect • Communicate • Together</div>
-
-<button class="btn btn-primary" onclick="startMeeting()">🚀 START NEW MEETING</button>
-
-<input id="meetingInput" placeholder="Meeting ID enter chey - ex: AR-XXXXX">
-
-<button class="btn btn-secondary" onclick="joinMeeting()">👥 JOIN MEETING</button>
-
-<button class="btn btn-secondary" onclick="copyLink()">🔗 COPY INVITE LINK</button>
-
-<div id="status"></div>
-</div>
-
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#fff;font-family:system-ui;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+.logo{font-size:32px;font-weight:800;color:#00e5ff;margin:30px 0 5px}
+.tag{color:#888;margin-bottom:30px;font-size:14px}
+.btn{width:100%;max-width:320px;padding:18px;border-radius:30px;border:0;font-size:17px;font-weight:700;margin:10px 0;background:#00e5ff;color:#000;display:block;text-align:center;text-decoration:none;cursor:pointer}
+input{width:100%;max-width:320px;padding:14px;border-radius:20px;border:1px solid #00e5ff;background:#111;color:#fff;text-align:center;margin:8px 0}
+#msg{margin-top:15px;font-size:13px}
+</style></head><body>
+<div class="logo">🚀 AR CONNECT</div>
+<div class="tag">Connect • Communicate • Together</div>
+<a class="btn" href="meeting.html?room=RATNA999" id="startBtn">🚀 START NEW MEETING</a>
+<input id="roomId" placeholder="Meeting ID enter chey - ex: RATNA99" value="">
+<button class="btn" onclick="joinNow()">👥 JOIN MEETING</button>
+<button class="btn" onclick="copyNow()">🔗 COPY INVITE LINK</button>
+<div id="msg"></div>
 <script>
-let lastMeetingId = localStorage.getItem('lastMeetingId') || '';
-if(lastMeetingId) document.getElementById('meetingInput').value = lastMeetingId;
-
-function setStatus(t){ document.getElementById('status').innerText = t; console.log(t); }
-
-function makeId(){
-  const letters = Math.random().toString(36).substring(2,6).toUpperCase();
-  const nums = Math.floor(Math.random()*900+100);
-  return `AR-${letters}${nums}`.substring(0,10);
+const rid='RATNA'+Math.floor(100+Math.random()*900);
+document.getElementById('startBtn').href='meeting.html?room='+rid;
+function joinNow(){
+let id=document.getElementById('roomId').value.trim();
+if(!id){id=rid; document.getElementById('roomId').value=id;}
+window.location.href='meeting.html?room='+id;
 }
-
-function startMeeting(){
-  setStatus('Creating meeting...');
-  const id = makeId();
-  const pwd = Math.random().toString(36).substring(2,8).toUpperCase();
-  localStorage.setItem('lastMeetingId', id);
-  lastMeetingId = id;
-  document.getElementById('meetingInput').value = id;
-  setStatus(`✅ Created: ${id} - Opening...`);
-  console.log('START:', id);
-  setTimeout(()=>{
-    window.location.href = `meeting.html?meeting=${encodeURIComponent(id)}&pwd=${pwd}`;
-  }, 800);
+function copyNow(){
+let id=document.getElementById('roomId').value.trim();
+if(!id){document.getElementById('msg').innerText='⚠️ ID enter chey'; return;}
+let link=location.origin+'/meeting.html?room='+id;
+navigator.clipboard.writeText(link);
+document.getElementById('msg').innerText='✅ Copied: '+link;
 }
-
-function joinMeeting(){
-  let mid = document.getElementById('meetingInput').value.trim();
-  if(!mid){ setStatus('❌ Meeting ID enter chey bro!'); return; }
-  localStorage.setItem('lastMeetingId', mid);
-  setStatus(`Joining ${mid}...`);
-  setTimeout(()=>{
-    window.location.href = `meeting.html?meeting=${encodeURIComponent(mid)}`;
-  }, 400);
-}
-
-function copyLink(){
-  let mid = document.getElementById('meetingInput').value.trim() || lastMeetingId;
-  if(!mid){ setStatus('❌ First START or ID enter chey'); return; }
-  const link = `${location.origin}${location.pathname.replace('index.html','')}meeting.html?meeting=${encodeURIComponent(mid)}`;
-  navigator.clipboard.writeText(link).then(()=>{
-    setStatus(`🔗 Copied: ${mid}`);
-  }).catch(()=>{
-    setStatus(link);
-  });
-}
-</script>
-</body>
-</html>
+</script></body></html>
