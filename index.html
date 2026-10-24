@@ -1,32 +1,37 @@
 <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AR CONNECT</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#fff;font-family:system-ui;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
-.logo{font-size:32px;font-weight:800;color:#00e5ff;margin:30px 0 5px}
-.tag{color:#888;margin-bottom:30px;font-size:14px}
-.btn{width:100%;max-width:320px;padding:18px;border-radius:30px;border:0;font-size:17px;font-weight:700;margin:10px 0;background:#00e5ff;color:#000;display:block;text-align:center;text-decoration:none;cursor:pointer}
-input{width:100%;max-width:320px;padding:14px;border-radius:20px;border:1px solid #00e5ff;background:#111;color:#fff;text-align:center;margin:8px 0}
-#msg{margin-top:15px;font-size:13px}
+.logo{font-size:32px;font-weight:800;color:#00e5ff;margin:40px 0 5px}
+.tag{color:#888;margin-bottom:30px}
+.btn{width:100%;max-width:320px;padding:18px;border-radius:30px;border:0;font-size:16px;font-weight:700;margin:10px 0;background:#00e5ff;color:#000;text-align:center;text-decoration:none;display:block;cursor:pointer}
+input{width:100%;max-width:320px;padding:14px;border-radius:20px;border:1px solid #00e5ff;background:#111;color:#fff;text-align:center;margin:8px 0;outline:none}
+#err{color:#ff6b6b;margin-top:15px;font-size:13px;text-align:center;max-width:320px}
+#ok{color:#51cf66;margin-top:15px;font-size:13px;text-align:center}
 </style></head><body>
 <div class="logo">🚀 AR CONNECT</div>
 <div class="tag">Connect • Communicate • Together</div>
-<a class="btn" href="meeting.html?room=RATNA999" id="startBtn">🚀 START NEW MEETING</a>
-<input id="roomId" placeholder="Meeting ID enter chey - ex: RATNA99" value="">
-<button class="btn" onclick="joinNow()">👥 JOIN MEETING</button>
-<button class="btn" onclick="copyNow()">🔗 COPY INVITE LINK</button>
-<div id="msg"></div>
+
+<a class="btn" id="startBtn" href="meeting.html?room=RATNA999">🚀 START NEW MEETING</a>
+<input id="roomId" placeholder="Meeting ID enter chey" autocomplete="off">
+<button class="btn" onclick="join()">👥 JOIN MEETING</button>
+<button class="btn" onclick="copyL()">🔗 COPY INVITE LINK</button>
+<div id="err"></div><div id="ok"></div>
+
 <script>
-const rid='RATNA'+Math.floor(100+Math.random()*900);
-document.getElementById('startBtn').href='meeting.html?room='+rid;
-function joinNow(){
-let id=document.getElementById('roomId').value.trim();
-if(!id){id=rid; document.getElementById('roomId').value=id;}
-window.location.href='meeting.html?room='+id;
+const randId='RATNA'+Math.floor(1000+Math.random()*9000);
+document.getElementById('startBtn').href='meeting.html?room='+randId;
+function join(){
+ let id=document.getElementById('roomId').value.trim();
+ if(!id) id=randId;
+ location.href='meeting.html?room='+id;
 }
-function copyNow(){
-let id=document.getElementById('roomId').value.trim();
-if(!id){document.getElementById('msg').innerText='⚠️ ID enter chey'; return;}
-let link=location.origin+'/meeting.html?room='+id;
-navigator.clipboard.writeText(link);
-document.getElementById('msg').innerText='✅ Copied: '+link;
+function copyL(){
+ let id=document.getElementById('roomId').value.trim();
+ if(!id){document.getElementById('err').innerText='❌ Mundu Meeting ID enter chey';return;}
+ let link=location.origin+'/meeting.html?room='+id;
+ navigator.clipboard.writeText(link).then(()=>{
+  document.getElementById('err').innerText='';
+  document.getElementById('ok').innerText='✅ Copied: '+link;
+ });
 }
 </script></body></html>
