@@ -1,55 +1,82 @@
 <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AR v2.1</title>
+<title>AR Connect v2.1 - 2 Way Fix</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#fff;font-family:system-ui;height:100vh;display:flex;flex-direction:column}
-.top{height:40px;background:#111a2e;display:flex;justify-content:space-between;align-items:center;padding:0 10px;font-size:12px;border-bottom:1px solid #1e3a5f}
-.top span{background:#0a84ff33;padding:2px 8px;border-radius:10px;margin-left:4px}
-#videos{flex:1;position:relative;background:#000}
+.top{height:42px;background:#111a2e;display:flex;justify-content:space-between;align-items:center;padding:0 10px;font-size:12px;border-bottom:1px solid #1e3a5f}
+.top span{background:#0a84ff33;padding:3px 8px;border-radius:10px;margin-left:5px}
+#videos{flex:1;position:relative;background:#111}
 video{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;background:#000}
-#pip{width:90px;height:120px;right:10px;bottom:60px;left:auto;top:auto;border:2px solid #0a84ff;border-radius:10px;z-index:5}
-#cap{position:absolute;bottom:8px;left:8px;right:110px;background:#000a;padding:6px 8px;border-radius:8px;font-size:11px;z-index:6;border:1px solid #0a84ff44}
-.ctrl{height:56px;background:#111a2e;display:flex;justify-content:center;align-items:center;gap:14px}
-.b{width:44px;height:44px;border-radius:50%;border:0;font-size:18px}.r{background:#ff3b30;color:#fff}.m{background:#1e3a5f;color:#fff}
+#pip{width:95px;height:130px;right:10px;bottom:62px;left:auto;top:auto;border:2px solid #0a84ff;border-radius:12px;z-index:10;background:#222}
+#cap{position:absolute;bottom:8px;left:8px;right:115px;background:rgba(0,0,0,0.7);padding:6px 10px;border-radius:10px;font-size:11px;z-index:11;border:1px solid #0a84ff44}
+.ctrl{height:58px;background:#111a2e;display:flex;justify-content:center;align-items:center;gap:16px}
+.b{width:46px;height:46px;border-radius:50%;border:0;font-size:18px}.r{background:#ff3b30;color:#fff}.m{background:#1e3a5f;color:#fff}
+#statusBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a84ff;padding:12px 18px;border-radius:20px;z-index:20;font-size:13px}
 </style></head><body>
-<div class="top"><div>🅰️ AR Connect <span id="r">RATNA99</span> <span>5G Secured</span> <span>🤖 AI Active</span></div><div id="c">1 user</div></div>
+<div class="top"><div>🅰️ AR Connect <span id="room">RATNA99</span> <span>5G Secured</span> <span>🤖 AI</span></div><div id="count">● 1 user</div></div>
 <div id="videos">
+<div id="statusBox">Waiting for friend...</div>
 <video id="localFull" autoplay muted playsinline></video>
-<video id="remote" autoplay playsinline style="display:none"></video>
+<video id="remote" autoplay playsinline></video>
 <video id="pip" autoplay muted playsinline></video>
 <div id="cap">LIVE CAPTIONS Telugu→English<br>అందరికీ నమస్కారం<br><span style="color:#5eb0ff">Hello everyone</span></div>
 </div>
-<div class="ctrl"><button class="b m" onclick="toggleM()">🎤</button><button class="b m" onclick="toggleC()">📹</button><button class="b r" onclick="location.href='/'">📞</button></div>
+<div class="ctrl"><button class="b m">🎤</button><button class="b m">📹</button><button class="b r" onclick="location.href='/'">📞</button></div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const room=new URLSearchParams(location.search).get('room')||'RATNA99';
-document.getElementById('r').innerText=room;
-let ls,pc;
-const sock=io();
-const ice={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'}]};
-(async()=>{
-try{
-ls=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-localFull.srcObject=ls;pip.srcObject=ls;
-console.log('camera ok');
-}catch(e){alert('Camera Allow chey! Chrome permission lo camera ON chey: '+e.message);return;}
-sock.emit('join-room',room);
-sock.on('user-joined',async()=>{
-pc=new RTCPeerConnection(ice);
-ls.getTracks().forEach(t=>pc.addTrack(t,ls));
-pc.onicecandidate=e=>e.candidate&&sock.emit('ice-candidate',{roomId:room,candidate:e.candidate});
-const o=await pc.createOffer();await pc.setLocalDescription(o);sock.emit('offer',{roomId:room,offer:o});
+const roomId=new URLSearchParams(location.search).get('room')||'RATNA99';
+document.getElementById('room').innerText=roomId;
+let localStream, pc;
+let isOfferer=false;
+const socket=io();
+const iceServers={iceServers:[
+{urls:'stun:stun.l.google.com:19302'},
+{urls:'stun:stun1.l.google.com:19302'},
+{urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+{urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'}
+]};
+async function init(){
+localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+localFull.srcObject=localStream;
+pip.srcObject=localStream;
+socket.emit('join-room',roomId);
+}
+function createPeer(){
+pc=new RTCPeerConnection(iceServers);
+localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+pc.onicecandidate=e=>{if(e.candidate) socket.emit('ice-candidate',{roomId,candidate:e.candidate})};
+pc.ontrack=e=>{
+document.getElementById('statusBox').style.display='none';
+remote.srcObject=e.streams[0];
+localFull.style.display='none';
+};
+pc.onconnectionstatechange=()=>{console.log('conn:',pc.connectionState); if(pc.connectionState==='connected') document.getElementById('statusBox').style.display='none';};
+}
+socket.on('user-joined',async()=>{
+console.log('Friend joined - creating offer');
+isOfferer=true;
+createPeer();
+const offer=await pc.createOffer({offerToReceiveVideo:true,offerToReceiveAudio:true});
+await pc.setLocalDescription(offer);
+socket.emit('offer',{roomId,offer});
 });
-sock.on('offer',async({offer})=>{
-pc=new RTCPeerConnection(ice);
-ls.getTracks().forEach(t=>pc.addTrack(t,ls));
-pc.onicecandidate=e=>e.candidate&&sock.emit('ice-candidate',{roomId:room,candidate:e.candidate});
-pc.ontrack=e=>{remote.style.display='block';remote.srcObject=e.streams[0];localFull.style.display='none';};
-await pc.setRemoteDescription(offer);
-const a=await pc.createAnswer();await pc.setLocalDescription(a);sock.emit('answer',{roomId:room,answer:a});
+socket.on('offer',async({offer})=>{
+console.log('Got offer');
+if(!pc) createPeer();
+await pc.setRemoteDescription(new RTCSessionDescription(offer));
+const answer=await pc.createAnswer();
+await pc.setLocalDescription(answer);
+socket.emit('answer',{roomId,answer});
 });
-sock.on('answer',async({answer})=>{await pc.setRemoteDescription(answer);});
-sock.on('ice-candidate',c=>pc&&pc.addIceCandidate(c));
-sock.on('user-count',n=>document.getElementById('c').innerText=n+' user');
-})();
-function toggleM(){const t=ls.getAudioTracks()[0];t.enabled=!t.enabled}
-function toggleC(){const t=ls.getVideoTracks()[0];t.enabled=!t.enabled}
+socket.on('answer',async({answer})=>{
+console.log('Got answer');
+await pc.setRemoteDescription(new RTCSessionDescription(answer));
+});
+socket.on('ice-candidate',async(candidate)=>{
+try{await pc.addIceCandidate(new RTCIceCandidate(candidate));}catch(e){console.log(e)}
+});
+socket.on('user-count',n=>{
+document.getElementById('count').innerText='● '+n+' user';
+if(n>1) document.getElementById('statusBox').innerText='Connecting...';
+if(n==1) {document.getElementById('statusBox').style.display='block'; document.getElementById('statusBox').innerText='Waiting for friend...'; localFull.style.display='block'; remote.srcObject=null;}
+});
+init();
 </script></body></html>
