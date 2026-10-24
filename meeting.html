@@ -1,21 +1,20 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AR Meet</title>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AR Meet Final</title>
 <style>
 body{margin:0;background:#000;color:#fff;font-family:Arial;overflow:hidden}
 #top{position:fixed;top:0;left:0;right:0;background:#0a84ff;padding:8px 12px;display:flex;justify-content:space-between;z-index:20;font-size:13px}
 #main{width:100vw;height:100vh;object-fit:cover;background:#111;display:block}
-#local{position:fixed;bottom:85px;right:8px;width:110px;height:150px;border-radius:12px;border:2px solid #0a84ff;object-fit:cover;z-index:15;transform:scaleX(-1);background:#222}
-#status{position:fixed;top:44px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);padding:5px 12px;border-radius:12px;font-size:11px;z-index:20}
+#local{position:fixed;bottom:85px;right:8px;width:115px;height:155px;border-radius:12px;border:2px solid #0a84ff;object-fit:cover;z-index:15;transform:scaleX(-1);background:#222}
+#status{position:fixed;top:44px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);padding:5px 12px;border-radius:12px;font-size:11px;z-index:20;text-align:center}
 #controls{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#ffffffee;padding:6px 10px;border-radius:30px;display:flex;gap:6px;z-index:30}
 #controls button{width:38px;height:38px;border-radius:50%;border:none;font-size:16px;background:#222;color:#fff}
 #controls .end{background:#ff3b30}
-#labelLocal{position:fixed;bottom:230px;right:10px;background:#0a84ff;padding:2px 6px;border-radius:6px;font-size:10px;z-index:16}
-#labelMain{position:fixed;top:70px;left:10px;background:#000000aa;padding:3px 8px;border-radius:6px;font-size:11px;z-index:16}
+#labelMain{position:fixed;top:70px;left:10px;background:#000000cc;padding:3px 8px;border-radius:6px;font-size:11px;z-index:16}
+#labelLocal{position:fixed;bottom:245px;right:10px;background:#0a84ff;padding:2px 6px;border-radius:6px;font-size:10px;z-index:16}
 </style></head><body>
-<div id="top"><div>🚀 RATNA99 | <span id="cnt">1</span> 👥</div><div><button onclick="navigator.clipboard.writeText(location.href);alert('Link Copied!')" style="background:#fff;border:none;color:#0a84ff;padding:4px 10px;border-radius:6px;font-weight:bold">Copy</button> <button onclick="location.href='/'" style="background:#ff3b30;border:none;color:#fff;padding:4px 8px;border-radius:6px">Leave</button></div></div>
-<div id="status">Starting...</div>
-<div id="labelMain">👤 Friend</div>
-<div id="labelLocal">You</div>
-<video id="main" autoplay playsinline></video>
+<div id="top"><div>🚀 RATNA99 | <span id="cnt">1</span> 👥</div><div><button onclick="navigator.clipboard.writeText(location.href);alert('Copied!')" style="background:#fff;border:none;color:#0a84ff;padding:4px 10px;border-radius:6px;font-weight:bold">Copy</button> <button onclick="location.href='/'" style="background:#ff3b30;border:none;color:#fff;padding:4px 8px;border-radius:6px">Leave</button></div></div>
+<div id="status">Starting camera...</div>
+<div id="labelMain">⏳ Waiting</div><div id="labelLocal">You</div>
+<video id="main" autoplay playsinline muted></video>
 <video id="local" autoplay playsinline muted></video>
 <div id="controls"><button id="mic">🎤</button><button id="cam">📹</button><button id="flip">🔄</button><button id="screen">🖥️</button><button id="chatBtn">💬</button><button onclick="location.href='/'" class="end">📞</button></div>
 <script src="https://ar-connect.onrender.com/socket.io/socket.io.js"></script><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -25,50 +24,59 @@ let mainV=document.getElementById('main'),localV=document.getElementById('local'
 let setS=t=>document.getElementById('status').textContent=t;
 let labelMain=document.getElementById('labelMain');
 socket=io("https://ar-connect.onrender.com",{transports:["websocket","polling"]});
-async function start(){
+async function startCam(){
  try{
-  localStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:true});
+  localStream=await navigator.mediaDevices.getUserMedia({video:{width:320,height:240},audio:true});
   localV.srcObject=localStream;
-  await localV.play();
-  // FIRST TIME - NEE FACE CHINNA BOX LO MATRAM - MAIN BLACK PETTU WAITING
-  setS("✅ You ready - Friend kosam waiting...");
+  localV.onloadedmetadata=()=>localV.play().catch(()=>{});
+  setS("✅ You ready - waiting friend...");
   labelMain.textContent="⏳ Waiting for friend...";
- }catch(e){setS("❌ Allow camera");alert(e.message);}
+ }catch(e){setS("Camera error - allow permission");alert(e.message);}
 }
-start();
-let ice={iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]};
-peer=new Peer({config:ice});
+startCam();
+let ice={iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"},{urls:"stun:stun3.l.google.com:19302"}]};
+peer=new Peer({config:{iceServers:ice.iceServers}});
 peer.on('open',id=>{peerId=id;socket.emit("join-room",{meetingId:roomId,userId:id});socket.emit("register-peer",{meetingId:roomId,peerId:id});});
 peer.on('call',call=>{
  call.answer(localStream);
- call.on('stream',s=>{
-  remoteS=s;
-  mainV.srcObject=s;
-  mainV.play();
-  setS("✅ FRIEND VACHADU - MAIN LO CHUDU!");
-  labelMain.textContent="👤 Friend - Live";
-  document.getElementById('cnt').textContent='2';
- });
+ call.on('stream',s=>{handleRemote(s);});
 });
 socket.on('room-users',c=>document.getElementById('cnt').textContent=c);
-socket.on('existing-peers',ids=>ids.forEach(id=>{if(id!==peerId)setTimeout(()=>callPeer(id),600);}));
-socket.on('new-peer',d=>{if(d.peerId!==peerId)setTimeout(()=>callPeer(d.peerId),600);});
+socket.on('existing-peers',ids=>ids.forEach(id=>{if(id!==peerId)setTimeout(()=>callPeer(id),500);}));
+socket.on('new-peer',d=>{if(d.peerId!==peerId)setTimeout(()=>callPeer(d.peerId),500);});
 function callPeer(pid){
- let call=peer.call(pid,localStream);
- call.on('stream',s=>{
-  remoteS=s;
-  mainV.srcObject=s;
-  mainV.play();
-  setS("✅ FRIEND HD - MAIN SCREEN LO!");
-  labelMain.textContent="👤 Friend - Live";
-  document.getElementById('cnt').textContent='2';
- });
+ try{
+  let call=peer.call(pid,localStream);
+  call.on('stream',s=>{handleRemote(s);});
+  call.on('error',e=>{setS("Connect error - retrying");setTimeout(()=>callPeer(pid),2000);});
+ }catch(e){setS("Call fail retry...");setTimeout(()=>callPeer(pid),2000);}
 }
-document.getElementById('mic').onclick=function(){let t=localStream.getAudioTracks()[0];t.enabled=!t.enabled;this.style.background=t.enabled?"#222":"#ff3b30";};
-document.getElementById('cam').onclick=function(){let t=localStream.getVideoTracks()[0];t.enabled=!t.enabled;this.style.background=t.enabled?"#222":"#ff3b30";};
-document.getElementById('flip').onclick=async()=>{facing=facing==='user'?'environment':'user';if(localStream)localStream.getTracks().forEach(x=>x.stop());localStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing},audio:true});localV.srcObject=localStream;};
-document.getElementById('screen').onclick=async()=>{try{let scr=await navigator.mediaDevices.getDisplayMedia({video:true});mainV.srcObject=scr;await mainV.play();scr.getVideoTracks()[0].onended=()=>{mainV.srcObject=remoteS||localStream;};setS("Screen sharing");}catch(e){}};
+function handleRemote(s){
+ remoteS=s;
+ // IMPORTANT FIX - main video lo remote set chey + force play
+ mainV.srcObject=s;
+ mainV.muted=false;
+ mainV.onloadedmetadata=()=>{
+  mainV.play().then(()=>{
+   setS("✅ FRIEND LIVE - MAIN LO CHUDU!");
+   labelMain.textContent="👤 Friend Live";
+   document.getElementById('cnt').textContent='2';
+  }).catch(()=>{
+   mainV.muted=true;
+   mainV.play();
+   setS("✅ Friend connected (tap for audio)");
+  });
+ };
+ // Backup play after 500ms
+ setTimeout(()=>{mainV.play().catch(()=>{});},500);
+ console.log("Remote tracks:",s.getTracks());
+}
+document.getElementById('mic').onclick=function(){let t=localStream.getAudioTracks()[0];if(t){t.enabled=!t.enabled;this.style.background=t.enabled?"#222":"#ff3b30";setS(t.enabled?"Mic ON":"Mic OFF");}};
+document.getElementById('cam').onclick=function(){let t=localStream.getVideoTracks()[0];if(t){t.enabled=!t.enabled;this.style.background=t.enabled?"#222":"#ff3b30";setS(t.enabled?"Cam ON":"Cam OFF");}};
+document.getElementById('flip').onclick=async()=>{facing=facing==='user'?'environment':'user';if(localStream)localStream.getTracks().forEach(x=>x.stop());localStream=await navigator.mediaDevices.getUserMedia({video:{width:320,height:240,facingMode:facing},audio:true});localV.srcObject=localStream;localV.play();};
+document.getElementById('screen').onclick=async()=>{try{let scr=await navigator.mediaDevices.getDisplayMedia({video:true});let old=mainV.srcObject;mainV.srcObject=scr;await mainV.play();scr.getVideoTracks()[0].onended=()=>{mainV.srcObject=remoteS||old;mainV.play();};setS("Screen sharing");}catch(e){}};
 document.getElementById('chatBtn').onclick=()=>{let m=prompt("Message:");if(m)socket.emit('chat-message',{meetingId:roomId,msg:m});};
-mainV.onclick=()=>{if(remoteS && localStream){let isRemote=mainV.srcObject===remoteS;mainV.srcObject=isRemote?localStream:remoteS;mainV.play();labelMain.textContent=isRemote?"👤 You":"👤 Friend";}};
+mainV.onclick=()=>{if(remoteS && localStream){let isRemote=mainV.srcObject===remoteS;mainV.srcObject=isRemote?localStream:remoteS;mainV.play();labelMain.textContent=isRemote?"👤 You (tap to swap)":"👤 Friend Live";}};
 socket.on('chat-message',d=>alert(d.user+": "+d.msg));
+setInterval(()=>{if(remoteS && mainV.srcObject!==remoteS && mainV.paused){mainV.srcObject=remoteS;mainV.play();}},2000);
 </script></body></html>
