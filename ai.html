@@ -1,35 +1,44 @@
 <!DOCTYPE html>
-<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>RatnaGPT - AR Connect AI</title><style>
-*{margin:0;padding:0;box-sizing:border-box}body{background:#0f0f0f;color:#fff;font-family:system-ui;display:flex;height:100vh}
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>RatnaGPT</title><style>
+*{margin:0;padding:0;box-sizing:border-box}body{background:#0f0f0f;color:#fff;font-family:system-ui;display:flex;height:100dvh;overflow:hidden}
 .sidebar{width:260px;background:#171717;padding:12px;display:flex;flex-direction:column;gap:10px;border-right:1px solid #222}
+@media(max-width:768px){.sidebar{position:fixed;left:-260px;top:0;bottom:0;z-index:100;transition:0.3s}.sidebar.open{left:0}}
 .new{background:#fff;color:#000;border-radius:10px;padding:12px;text-align:center;font-weight:600;cursor:pointer}
-.main{flex:1;display:flex;flex-direction:column}.top{padding:14px;border-bottom:1px solid #222;display:flex;justify-content:space-between}
-.msgs{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
-.msg{max-width:750px;margin:0 auto;width:100%;display:flex;gap:12px;padding:12px}.msg.user{background:#1a1a1a;border-radius:12px}
-.avatar{width:32px;height:32px;border-radius:50%;background:#222;display:flex;align-items:center;justify-content:center}
-.text{line-height:1.6;font-size:15px;white-space:pre-wrap}
-.input-area{padding:16px;border-top:1px solid #222;display:flex;justify-content:center}
-.input-box{max-width:750px;width:100%;background:#1a1a1a;border-radius:24px;display:flex;padding:8px 8px 8px 20px;gap:8px;border:1px solid #333}
-.input-box input{flex:1;background:transparent;border:none;color:#fff;outline:none;font-size:15px}
-.send{width:36px;height:36px;background:#fff;border-radius:50%;border:none;cursor:pointer}
-.welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:#888;text-align:center}
-.welcome h1{font-size:28px;color:#fff}.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:600px;width:100%}
-.card{border:1px solid #222;padding:14px;border-radius:12px;cursor:pointer;text-align:left}.card:hover{background:#1a1a1a}
-@media(max-width:700px){.sidebar{display:none}.cards{grid-template-columns:1fr}}
+.main{flex:1;display:flex;flex-direction:column;position:relative}
+.top{padding:12px 16px;border-bottom:1px solid #222;display:flex;justify-content:space-between;align-items:center;background:#0f0f0f}
+.center{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:600px;width:100%;margin-top:20px}
+.card{border:1px solid #2a2a2a;padding:12px;border-radius:12px;background:#1a1a1a;cursor:pointer;font-size:13px}
+.card:hover{background:#222}
+.inputArea{padding:12px 16px 20px;background:#0f0f0f;border-top:1px solid #222;display:flex;gap:10px;align-items:center}
+.inputArea input{flex:1;background:#2a2a2a;border:none;border-radius:24px;padding:14px 18px;color:#fff;outline:none;font-size:15px}
+.inputArea button{background:#fff;color:#000;border:none;width:40px;height:40px;border-radius:50%;font-weight:700;cursor:pointer}
+.msg{max-width:700px;width:100%;padding:10px 0;font-size:14px;line-height:1.6}
+.user{color:#fff;font-weight:600}
+.ai{color:#ccc}
 </style></head><body>
-<div class="sidebar"><div class="new" onclick="location.reload()">+ New Chat</div><div style="margin-top:auto;color:#555;font-size:12px">RatnaGPT v1.0<br>AR Connect AI</div></div>
-<div class="main"><div class="top"><div>🧠 RatnaGPT</div><div style="font-size:12px;color:#888"><a href="/" style="color:#888">Home</a> | <a href="/meeting.html" style="color:#888">Meeting</a></div></div><div id="msgs" class="msgs"><div class="welcome" id="welcome"><h1>Em adagali ra? 😊</h1><p>ChatGPT lanti AI - Ar Connect lo!</p><div class="cards"><div class="card" onclick="ask('AR Connect ela work avutundi?')">📹 AR Connect ela work avutundi?</div><div class="card" onclick="ask('ChatGPT lanti app ela create chesaru?')">💻 ChatGPT app ela create chesaru?</div><div class="card" onclick="ask('Video call lo iddaru yela kanipistaru?')">👥 Video lo iddaru yela?</div><div class="card" onclick="ask('Nee peru enti?')">🤖 Nee peru enti?</div></div></div></div><div class="input-area"><div class="input-box"><input id="inp" placeholder="Message RatnaGPT..." onkeydown="if(event.key==='Enter')send()"><button class="send" onclick="send()">↑</button></div></div></div>
+<div class="sidebar" id="side"><div class="new" onclick="location.reload()">+ New Chat</div><div style="font-size:12px;color:#666;margin-top:20px;">History empty</div></div>
+<div class="main">
+<div class="top"><div>🧠 <b>RatnaGPT</b></div><div><a href="/" style="color:#888;text-decoration:none;font-size:13px;">Home</a> | <a href="/meeting.html" style="color:#888;text-decoration:none;font-size:13px;">Meeting</a></div></div>
+<div class="center" id="chat"><h2>Em adagali ra? 😊</h2><p style="color:#888;font-size:13px;margin:8px 0 20px;">ChatGPT lanti AI - Ar Connect lo!</p>
+<div class="cards" id="cards">
+<div class="card" onclick="ask(this)">📹 AR Connect ela work avutundi?</div>
+<div class="card" onclick="ask(this)">💻 ChatGPT app ela create chesaru?</div>
+<div class="card" onclick="ask(this)">👥 Video lo iddaru yela?</div>
+<div class="card" onclick="ask(this)">🤖 Nee peru enti?</div>
+</div></div>
+<div class="inputArea"><input id="q" placeholder="Emaina adugu..." autocomplete="off" onkeydown="if(event.key==='Enter')send()"><button onclick="send()">↑</button></div>
+</div>
 <script>
-const msgsEl=document.getElementById('msgs'),inp=document.getElementById('inp');
-function ask(t){inp.value=t;send()}
-function addMsg(role,text){const d=document.createElement('div');d.className='msg '+(role==='user'?'user':'');d.innerHTML=`<div class="avatar">${role==='user'?'R':'🤖'}</div><div class="text">${text}</div>`;const w=document.getElementById('welcome');if(w)w.remove();msgsEl.appendChild(d);msgsEl.scrollTop=msgsEl.scrollHeight}
-async function send(){let q=inp.value.trim();if(!q)return;addMsg('user',q);inp.value='';let aiDiv=document.createElement('div');aiDiv.className='msg';aiDiv.innerHTML='<div class="avatar">🤖</div><div class="text">Typing...</div>';msgsEl.appendChild(aiDiv);msgsEl.scrollTop=msgsEl.scrollHeight;let ans=await getAI(q);aiDiv.querySelector('.text').innerText=ans;msgsEl.scrollTop=msgsEl.scrollHeight}
-async function getAI(q){
- const ql=q.toLowerCase();
- if(ql.includes('ar connect'))return 'AR Connect lo video call PeerJS + Socket.IO tho work avutundi ra!\n\n1. Socket.IO = room join, user list\n2. PeerJS = P2P video connection\n3. register-peer event tho iddaru connect avutaru\n4. existing-peers tho auto call\n\nNee server.js lo ade logic undi - rooms[] lo users store chesi peer IDs exchange chestundi!';
- if(ql.includes('peru'))return 'Nenu RatnaGPT ra! 😎\nNee AR Connect project kosam nene create ayina AI clone! ChatGPT laane work chestha!';
- if(ql.includes('video')||ql.includes('iddaru'))return 'Video call lo iddaru kanipinchali ante:\n\n1. getUserMedia() tho camera on\n2. peer.call(peerId, stream) tho call\n3. peer.on(call) tho answer cheyali\n4. call.on(stream) tho remote video set cheyali\n\nNee meeting.html lo socket.on(existing-peers) daggara automatic call chestundi!';
- if(ql.includes('chatgpt')||ql.includes('create'))return 'ChatGPT lanti app ni 4 steps lo create chesaru:\n\n1. BRAIN: GPT model (Transformer) - trillions words tho train\n2. BACKEND: Python + PyTorch + GPU servers (Azure)\n3. FRONTEND: React.js - chat UI (manam ippudu chesindi ide!)\n4. API: /v1/chat/completions - user msg -> AI response\n\nNuvvu kuda OpenAI API key tho same app cheyavachu!';
- try{const r=await fetch('https://api.pollinations.ai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'openai',messages:[{role:'user',content:q}],max_tokens:600})});const d=await r.json();return d.choices?.[0]?.message?.content||'Ardham kaledu ra, malla adugu!';}catch(e){return 'Nenu RatnaGPT ra! Neeku AR Connect, video calls, coding anni nerpistha! 😊';}
-}
+const chat=document.getElementById('chat');const cards=document.getElementById('cards');const input=document.getElementById('q');
+const answers={
+"ar connect ela work avutundi":"<b>AR Connect</b> ante WebRTC tho video call ra! 🔥<br><br>• Frontend: HTML/CSS/JS<br>• Backend: Node.js + Socket.io<br>• Video: WebRTC Peer Connection<br>• Server: Render lo run avutundi<br><br>Nuvve create chesav ra idi!",
+"chatgpt app ela create chesaru":"ChatGPT lanti app cheyali ante:<br><br>1. <b>Frontend</b> - Nee la ChatGPT UI (nuvvu chesinattu)<br>2. <b>Backend</b> - OpenAI API / Gemini API use chey<br>3. <b>Logic</b> - fetch('/api/chat') tho answer teesuko<br><br>Nee ai.html ippudu static answers istundi, API connect cheste real AI avutundi!",
+"video lo iddaru yela":"Rendu phone lo same meeting ID tho join avvali ra!<br><br>Phone 1: Create Meeting<br>Phone 2: Same link open chey<br>Appude iddaru kanipistaru! 👥",
+"nee peru enti":"Nenu <b>RatnaGPT</b> ra! 😎<br>Ratna Babu create chesina AI. ChatGPT lanti vadini, kaani nee AR Connect lo unna!"
+};
+function addMsg(t,c){if(cards)cards.style.display='none';const d=document.createElement('div');d.className='msg '+c;d.innerHTML=t;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;}
+function ask(el){const q=el.innerText;addMsg('🧑‍💻 '+q,'user');setTimeout(()=>{const key=Object.keys(answers).find(k=>q.toLowerCase().includes(k));addMsg('🤖 '+(answers[key]||'Adhi naku telidu ra, inkoti adugu! 😊'),'ai');},400);}
+function send(){const v=input.value.trim();if(!v)return;addMsg('🧑‍💻 '+v,'user');input.value='';const key=Object.keys(answers).find(k=>v.toLowerCase().includes(k));setTimeout(()=>{addMsg('🤖 '+(answers[key]||'Nice question ra! 😊 Nenu inka nerchukuntunna. API connect cheste anni chepta!'),'ai');},500);}
+setTimeout(()=>input.focus(),500);
 </script></body></html>
