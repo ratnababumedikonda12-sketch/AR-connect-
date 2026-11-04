@@ -93,7 +93,7 @@ async function startMeeting(){
   try{
     status.innerText = "⏳ Creating private meeting...";
 
-    const response = await fetch("/api/create-meeting", {
+    const response = await fetch("https://ar-connect.onrender.com/api/create-meeting", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
