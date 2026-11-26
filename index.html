@@ -127,7 +127,13 @@ try {
     sessionStorage.setItem("arMeetingPassword", password);
 
     const inviteLink = meetingLink(id);
-    localStorage.setItem("arLastMeetingId", id);
+try {
+  await navigator.clipboard.writeText(inviteLink);
+  status.innerHTML += "<br>✅ Invite link automatically copied!";
+} catch (e) {
+  status.innerHTML += "<br>⚠️ Please click COPY INVITE LINK.";
+}    
+localStorage.setItem("arLastMeetingId", id);
     localStorage.setItem("arLastMeetingLink", inviteLink);
 
     document.getElementById("meetingId").value = id;
