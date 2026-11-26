@@ -473,7 +473,7 @@ padding:20px;
 async function verifyMeetingPassword(){
 
   const input=document.getElementById("meetingPassword");
-  const status=document.getElementById("passwordStatus");
+1372  const status=document.getElementById("passwordStatus");
 
   const meetingId =
     new URLSearchParams(location.search).get("meeting") || "main";
@@ -1370,7 +1370,11 @@ let arStream = null;
 let arCalls = {};
 
 async function startARPeerEngine(){
-
+  if (window.__arPeerEngineRunning) {
+    console.log("AR PeerJS already running");
+    return;
+  }
+  window.__arPeerEngineRunning = true;
   try{
     console.log("🚀 AR PeerJS engine starting...");
     setStatus("🎥 Camera + Mic start అవుతోంది...");
@@ -1426,6 +1430,9 @@ async function startARPeerEngine(){
     async function callARPeer(peerId){
       if(!peerId || peerId === window.arPeerId) return;
       if(arCalls[peerId]) return;
+
+      // Only one participant should initiate the call
+      if(String(window.arPeerId) < String(peerId)) return;
 
       // Wait briefly for PeerJS + local media to become ready
       for(let i=0;i<30;i++){
@@ -1508,6 +1515,7 @@ async function startARPeerEngine(){
     });
 
   }catch(error){
+    window.__arPeerEngineRunning = false;
     console.error("❌ AR Peer engine:",error);
     const message = "Camera/Mic error: " +
       (error.name || "Error") + " - " +
