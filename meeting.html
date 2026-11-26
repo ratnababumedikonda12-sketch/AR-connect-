@@ -1086,6 +1086,7 @@ function addVideo(id, stream, name){
     video.muted = (id === "local") ? true : remoteAudioMuted;
     video.volume = (id === "local") ? 0 : (remoteAudioMuted ? 0 : 1);
   video.srcObject = stream;
+  if (id === "local") video.style.transform = "scaleX(-1)";
 
   video.onloadedmetadata = ()=>{
     video.play().then(()=>{
