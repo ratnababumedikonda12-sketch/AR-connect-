@@ -101,8 +101,20 @@ async function startMeeting(){
       body: JSON.stringify({})
     });
 
-    const result = await response.json();
+    const responseText = await response.text();
 
+console.log("API URL:", response.url);
+console.log("HTTP Status:", response.status);
+console.log("Content Type:", response.headers.get("content-type"));
+console.log("API Response:", responseText);
+
+let result;
+
+try {
+  result = JSON.parse(responseText);
+} catch (e) {
+  throw new Error("Invalid JSON: " + responseText.substring(0, 150));
+}
     if(!response.ok || !result.success){
       throw new Error(result.message || "Meeting creation failed");
     }
