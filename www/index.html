@@ -60,7 +60,8 @@ input{
 <div class="logo">🚀 AR CONNECT</div>
 <div class="sub">Connect • Communicate • Together</div>
 
-<button onclick="startMeeting()">🚀 START NEW MEETING</button>
+<a href="/ai.html" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:12px 20px;border-radius:12px;text-decoration:none;font-weight:600;margin:10px 10px 10px 0;box-shadow:0 4px 12px rgba(102,126,234,0.4);">🧠 RatnaGPT - ChatGPT Clone</a>
+    <button onclick="startMeeting()">🚀 START NEW MEETING</button>
 
 <input id="meetingId" placeholder="Meeting ID enter chey">
 
@@ -80,7 +81,7 @@ function makeMeetingId(){
 }
 
 function meetingLink(id){
-  return location.origin +
+  return "https://ar-connect.onrender.com" +
     "/meeting.html?meeting=" +
     encodeURIComponent(id);
 }
@@ -92,7 +93,7 @@ async function startMeeting(){
   try{
     status.innerText = "⏳ Creating private meeting...";
 
-    const response = await fetch("/api/create-meeting", {
+    const response = await fetch("https://ar-connect.onrender.com/api/create-meeting", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -100,8 +101,20 @@ async function startMeeting(){
       body: JSON.stringify({})
     });
 
-    const result = await response.json();
+    const responseText = await response.text();
 
+console.log("API URL:", response.url);
+console.log("HTTP Status:", response.status);
+console.log("Content Type:", response.headers.get("content-type"));
+console.log("API Response:", responseText);
+
+let result;
+
+try {
+  result = JSON.parse(responseText);
+} catch (e) {
+  throw new Error("Invalid JSON: " + responseText.substring(0, 150));
+}
     if(!response.ok || !result.success){
       throw new Error(result.message || "Meeting creation failed");
     }
@@ -113,17 +126,25 @@ async function startMeeting(){
     sessionStorage.setItem("arMeetingId", id);
     sessionStorage.setItem("arMeetingPassword", password);
 
+    const inviteLink = meetingLink(id);
+try {
+  await navigator.clipboard.writeText(inviteLink);
+  status.innerHTML += "<br>✅ Invite link automatically copied!";
+} catch (e) {
+  status.innerHTML += "<br>⚠️ Please click COPY INVITE LINK.";
+}    
+localStorage.setItem("arLastMeetingId", id);
+    localStorage.setItem("arLastMeetingLink", inviteLink);
+
     document.getElementById("meetingId").value = id;
 
     status.innerHTML =
       "✅ Private meeting created<br>" +
       "Meeting ID: <b>" + id + "</b><br>" +
       "Password: <b>" + password + "</b><br>" +
-      "Opening meeting...";
-
-    setTimeout(() => {
-      location.href = meetingLink(id);
-    }, 800);
+      "Invite Link: <br><a href='" + inviteLink +
+      "' target='_blank'>" + inviteLink + "</a><br>" +
+      "Now click COPY INVITE LINK or JOIN MEETING.";
 
   }catch(error){
 
@@ -148,11 +169,13 @@ function joinMeeting(){
 
 async function copyCurrentInvite(){
 
-  const id = document.getElementById("meetingId").value.trim();
+  const input = document.getElementById("meetingId");
+  const id = input.value.trim() ||
+    localStorage.getItem("arLastMeetingId") || "";
 
   if(!id){
     document.getElementById("status").innerText =
-      "⚠️ Mundu Meeting ID enter chey";
+      "⚠️ Mundu meeting create chey";
     return;
   }
 
@@ -160,12 +183,9 @@ async function copyCurrentInvite(){
 
   try{
     await navigator.clipboard.writeText(link);
-
     document.getElementById("status").innerHTML =
       "✅ Invite link copied!<br>" + link;
-
   }catch(e){
-
     prompt("Copy this invite link:", link);
   }
 }
