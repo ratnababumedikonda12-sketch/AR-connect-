@@ -6,7 +6,7 @@
 
 
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://ar-connect.onrender.com/socket.io/socket.io.js"></script>
 <script>
 let currentMeeting = new URLSearchParams(location.search).get("meeting") || "main";
 
@@ -974,7 +974,7 @@ function autoJoinFromLink(){
   }
 }
 
-const socket = io();
+const socket = io("https://ar-connect.onrender.com");
 
 let localStream = null;
 let peerConnections = new Map();
